@@ -3,6 +3,7 @@ import '../widgets/clouds_widget.dart';
 import '../widgets/floor_widget.dart';
 import '../widgets/car_widget.dart';
 import '../widgets/controls_widget.dart';
+import '../widgets/signpost_widget.dart';
 import 'about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,27 +14,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  double worldX = 0; // world scroll offset
-  double carX = 0.5; // 0.0 to 1.0 screen position
+  double worldX = 0;
+  double carX = 0.5;
 
   bool movingLeft = false;
   bool movingRight = false;
-  bool _isLoopRunning = false; // prevent multiple loops
+  bool _isLoopRunning = false;
 
   final double cloudParallax = 0.3;
   final double floorParallax = 1.0;
   final double objectParallax = 1.0;
-  final double stepSize = 0.02;
 
   final double leftLimit = 0.25;
   final double rightLimit = 0.75;
 
-  static const double floorHeight = 250;
+  static const double floorHeight = 63; // perfect height touching the floor
 
   void startLeft() {
     if (!movingLeft) {
       movingLeft = true;
-      movingRight = false; // cancel opposite direction
+      movingRight = false;
       _gameLoop();
     }
   }
@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void startRight() {
     if (!movingRight) {
       movingRight = true;
-      movingLeft = false; // cancel opposite direction
+      movingLeft = false;
       _gameLoop();
     }
   }
@@ -69,12 +69,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _isLoopRunning = false;
   }
 
-  // Add this inside _HomeScreenState
-
   void _moveLeft() {
     final screenWidth = MediaQuery.of(context).size.width;
-    final double carSpeed = screenWidth * 0.005;
-    final double worldSpeed = screenWidth * 0.004;
+
+    // mobile boost
+    final bool isMobile = screenWidth < 600;
+    final double speedBoost = isMobile ? 1.4 : 1.0;
+
+    final double carSpeed = screenWidth * 0.005 * speedBoost;
+    final double worldSpeed = screenWidth * 0.004 * speedBoost;
 
     if (carX > leftLimit) {
       carX -= carSpeed / screenWidth;
@@ -85,8 +88,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _moveRight() {
     final screenWidth = MediaQuery.of(context).size.width;
-    final double carSpeed = screenWidth * 0.005;
-    final double worldSpeed = screenWidth * 0.004;
+
+    // mobile boost
+    final bool isMobile = screenWidth < 600;
+    final double speedBoost = isMobile ? 1.4 : 1.0;
+
+    final double carSpeed = screenWidth * 0.005 * speedBoost;
+    final double worldSpeed = screenWidth * 0.004 * speedBoost;
 
     if (carX < rightLimit) {
       carX += carSpeed / screenWidth;
@@ -105,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
 
         // CLOUDS
-        Positioned.fill(child: CloudsWidget(position: worldX * cloudParallax)),
+        Positioned.fill(child: CloudsWidget(position: -worldX * cloudParallax)),
 
         // FLOOR
         Align(
@@ -113,19 +121,71 @@ class _HomeScreenState extends State<HomeScreen> {
           child: FloorWidget(position: worldX * floorParallax),
         ),
 
-        // SIGNPOST
-        Positioned(
-          bottom: floorHeight * 0.28,
-          left: worldX * objectParallax + 300,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AboutScreen()),
-              );
-            },
-            child: Image.asset('assets/signpost-home.png', width: 140),
-          ),
+        // -------------------------
+        // SIGNPOSTS (6 total)
+        // -------------------------
+
+        // HOME SIGNPOST
+        SignpostWidget(
+          worldX: worldX,
+          positionX: 300,
+          floorHeight: floorHeight,
+          asset: 'assets/signpost-home.png',
+          width: 140,
+          onTap: () {
+            // Already on home → do nothing
+          },
+        ),
+
+        // ABOUT ME
+        SignpostWidget(
+          worldX: worldX,
+          positionX: 900,
+          floorHeight: floorHeight,
+          asset: 'assets/signpost-aboutme.png',
+          width: 140,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            );
+          },
+        ),
+
+        // SKILLS
+        SignpostWidget(
+          worldX: worldX,
+          positionX: 1500,
+          floorHeight: floorHeight,
+          asset: 'assets/signpost-skills.png',
+          width: 140,
+        ),
+
+        // LEADERSHIP
+        SignpostWidget(
+          worldX: worldX,
+          positionX: 2100,
+          floorHeight: floorHeight,
+          asset: 'assets/signpost-leadership.png',
+          width: 140,
+        ),
+
+        // EXPERIENCE
+        SignpostWidget(
+          worldX: worldX,
+          positionX: 2700,
+          floorHeight: floorHeight,
+          asset: 'assets/signpost-experience.png',
+          width: 140,
+        ),
+
+        // PROJECTS
+        SignpostWidget(
+          worldX: worldX,
+          positionX: 3300,
+          floorHeight: floorHeight,
+          asset: 'assets/signpost-project.png',
+          width: 140,
         ),
 
         // CAR
@@ -137,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onLeftEnd: stopLeft,
           onRightStart: startRight,
           onRightEnd: stopRight,
-          onStopAll: stopAll, // <-- pass the new callback
+          onStopAll: stopAll,
         ),
       ],
     );

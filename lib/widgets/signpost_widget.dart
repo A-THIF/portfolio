@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
 class SignpostWidget extends StatelessWidget {
-  final double worldX; // current world scroll offset
-  final double positionX; // fixed position of signpost in the world
+  final double worldX; // world scroll offset
+  final double positionX; // horizontal world position
   final double width;
-  final double floorHeight; // to align perfectly with floor
-  final double offsetY; // small vertical adjustment
-  final VoidCallback? onTap; // make it tappable
+  final double floorHeight; // to align with floor
+  final double offsetY; // vertical adjustment
+  final String asset; // image file of signpost
+  final VoidCallback? onTap;
 
   const SignpostWidget({
     super.key,
     required this.worldX,
     required this.positionX,
     required this.floorHeight,
+    required this.asset,
     this.width = 130,
     this.offsetY = 5,
     this.onTap,
@@ -25,11 +27,7 @@ class SignpostWidget extends StatelessWidget {
       bottom: floorHeight + offsetY,
       child: GestureDetector(
         onTap: onTap,
-        child: Image.asset(
-          'assets/signpost-home.png',
-          width: width,
-          fit: BoxFit.contain,
-        ),
+        child: Image.asset(asset, width: width, fit: BoxFit.contain),
       ),
     );
   }

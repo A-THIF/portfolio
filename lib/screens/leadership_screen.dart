@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class ExperienceScreen extends StatelessWidget {
-  const ExperienceScreen({super.key});
+class LeadershipScreen extends StatelessWidget {
+  const LeadershipScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class ExperienceScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Experience",
+                    "Leadership",
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.bold,
@@ -28,20 +28,17 @@ class ExperienceScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  _expCard(
-                    "Junior IoT Research & Innovation Intern",
-                    "Core Idea Innovations Pvt Ltd",
-                    [
-                      "Designed prototype for virtual eye-care assistance",
-                      "Worked on IoT + mobile integration",
-                      "Built assistive solutions based on real needs",
-                    ],
-                  ),
+                  _sectionCard("IEEE Leadership Roles", [
+                    "Organised multiple events for IEEE",
+                    "Handled technical & non-technical event planning",
+                    "Collaborated with teams for execution",
+                    "Presented ideas & solutions",
+                  ]),
 
-                  _expCard("App Developer (Personal Projects)", "Independent", [
-                    "Flutter apps including GPA calculator & Mario portfolio",
-                    "Firebase integration",
-                    "UI/UX experimentation",
+                  _sectionCard("Initiatives", [
+                    "Built IoT prototype for telemedicine startup",
+                    "Created assistive projects (EnvisionCap, Smart Watch Light)",
+                    "Led college mini projects",
                   ]),
                 ],
               ),
@@ -52,7 +49,7 @@ class ExperienceScreen extends StatelessWidget {
     );
   }
 
-  Widget _expCard(String role, String place, List<String> points) {
+  Widget _sectionCard(String title, List<String> items) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
@@ -65,12 +62,11 @@ class ExperienceScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            role,
+            title,
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          Text(place, style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
-          ...points.map(
+          ...items.map(
             (e) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text("• $e", style: const TextStyle(fontSize: 16)),

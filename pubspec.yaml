@@ -25,3 +25,8 @@ flutter:
     - assets/grass_floor.png
     - assets/sky.png
     - assets/signpost-home.png
+    - assets/signpost-skills.png
+    - assets/signpost-leadership.png
+    - assets/signpost-experience.png
+    - assets/signpost-project.png
+    - assets/signpost-aboutme.png
