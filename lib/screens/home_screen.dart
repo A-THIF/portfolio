@@ -4,6 +4,7 @@ import '../widgets/floor_widget.dart';
 import '../widgets/car_widget.dart';
 import '../widgets/controls_widget.dart';
 import '../widgets/signpost_widget.dart';
+import '../widgets/loading_profile_card.dart';
 import 'about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -24,7 +25,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final double cloudParallax = 0.3;
   final double floorParallax = 1.0;
   final double objectParallax = 1.0;
-
+  final double cardVisibleThresholdStart = 0.0;
+  final double cardVisibleThresholdEnd =
+      1.0; // Adjust as needed for visibility range
+  final double signpostPositionX = 5; // X position of the HOME signpost
+  final double signpostOffsetX = 70; // Offset to center the card above the
   final double leftLimit = 0.25;
   final double rightLimit = 0.75;
 
@@ -190,6 +195,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // CAR
         CarWidget(screenX: carX),
+
+        // Define a threshold around the starting position to show the card
+
+        // Then use this in build method:
+        Positioned(
+          left: worldX + signpostPositionX + signpostOffsetX,
+          bottom: floorHeight + 150, // above the floor
+          child: const LoadingProfileCard(),
+        ),
 
         // CONTROLS
         ControlsWidget(

@@ -7,7 +7,7 @@ class ControlsWidget extends StatefulWidget {
   final VoidCallback onRightStart;
   final VoidCallback onLeftEnd;
   final VoidCallback onRightEnd;
-  final VoidCallback onStopAll; // for stopping the car
+  final VoidCallback onStopAll;
 
   const ControlsWidget({
     required this.onLeftStart,
@@ -24,9 +24,6 @@ class ControlsWidget extends StatefulWidget {
 
 class _ControlsWidgetState extends State<ControlsWidget> {
   final FocusNode _focusNode = FocusNode();
-
-  bool _isMovingLeft = false;
-  bool _isMovingRight = false;
 
   @override
   void initState() {
@@ -47,38 +44,28 @@ class _ControlsWidgetState extends State<ControlsWidget> {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
         widget.onStopAll();
         widget.onLeftStart();
-        _isMovingLeft = true;
-        _isMovingRight = false;
       }
       if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
         widget.onStopAll();
         widget.onRightStart();
-        _isMovingRight = true;
-        _isMovingLeft = false;
       }
     } else if (event is KeyUpEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
         widget.onLeftEnd();
-        _isMovingLeft = false;
       }
       if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
         widget.onRightEnd();
-        _isMovingRight = false;
       }
     }
     return false;
   }
 
   void _handlePointerScroll(PointerScrollEvent event) {
-    widget.onStopAll(); // stop any current movement
+    widget.onStopAll();
     if (event.scrollDelta.dy < 0) {
       widget.onRightStart();
-      _isMovingRight = true;
-      _isMovingLeft = false;
     } else if (event.scrollDelta.dy > 0) {
       widget.onLeftStart();
-      _isMovingLeft = true;
-      _isMovingRight = false;
     }
   }
 
@@ -92,25 +79,17 @@ class _ControlsWidgetState extends State<ControlsWidget> {
       child: GestureDetector(
         onTap: () {
           widget.onStopAll();
-          _isMovingLeft = false;
-          _isMovingRight = false;
         },
         onHorizontalDragUpdate: (details) {
           widget.onStopAll();
           if (details.delta.dx > 0) {
             widget.onRightStart();
-            _isMovingRight = true;
-            _isMovingLeft = false;
           } else if (details.delta.dx < 0) {
             widget.onLeftStart();
-            _isMovingLeft = true;
-            _isMovingRight = false;
           }
         },
         onHorizontalDragEnd: (_) {
           widget.onStopAll();
-          _isMovingLeft = false;
-          _isMovingRight = false;
         },
         behavior: HitTestBehavior.opaque,
         child: const SizedBox.expand(),
