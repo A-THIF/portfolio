@@ -4,7 +4,7 @@ import '../widgets/floor_widget.dart';
 import '../widgets/car_widget.dart';
 import '../widgets/controls_widget.dart';
 import '../widgets/signpost_widget.dart';
-import '../widgets/loading_profile_card.dart';
+import '../widgets/profile_details.dart';
 import 'about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Positioned(
           left: worldX + signpostPositionX + signpostOffsetX,
           bottom: floorHeight + 150, // above the floor
-          child: const LoadingProfileCard(),
+          child: const ProfileDetailsCard(),
         ),
 
         // CONTROLS

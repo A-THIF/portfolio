@@ -34,3 +34,6 @@ flutter:
     - assets/signpost-project.png
     - assets/signpost-aboutme.png
     - assets/profile.png
+    - assets/about_button.png
+    - assets/experience_button.png
+    - assets/projects_button.png
