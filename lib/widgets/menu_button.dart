@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 
 class MenuButton extends StatelessWidget {
   final VoidCallback onPressed;
-  final double? width;
-  final double? height;
+  final double width;
+  final double height;
   final String imagePath;
-
-  static const Rect slice = Rect.fromLTRB(8, 8, 653, 369);
 
   const MenuButton({
     super.key,
     required this.onPressed,
     required this.imagePath,
-    this.width,
-    this.height,
+    required this.width,
+    required this.height,
   });
 
   @override
@@ -23,13 +21,14 @@ class MenuButton extends StatelessWidget {
       child: Container(
         width: width,
         height: height,
-        alignment: Alignment.center,
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage(imagePath),
-            fit: BoxFit.fill,
-            centerSlice: slice,
-            filterQuality: FilterQuality.none,
+            // 🔥 CHANGED: Use BoxFit.contain or fill
+            // .contain ensures the text inside the image doesn't get cut off
+            // .fill will stretch it to match width/height exactly (might distort text)
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.none, // Keep pixel art sharp
           ),
         ),
       ),

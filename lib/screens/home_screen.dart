@@ -5,6 +5,7 @@ import '../widgets/car_widget.dart';
 import '../widgets/controls_widget.dart';
 import '../widgets/signpost_widget.dart';
 import '../widgets/profile_details.dart';
+import '../screens/optimized_profile_layout.dart';
 import 'about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,19 +22,15 @@ class _HomeScreenState extends State<HomeScreen> {
   bool movingLeft = false;
   bool movingRight = false;
   bool _isLoopRunning = false;
+  bool _forceShowGame = false;
 
   final double cloudParallax = 0.3;
   final double floorParallax = 1.0;
-  final double objectParallax = 1.0;
-  final double cardVisibleThresholdStart = 0.0;
-  final double cardVisibleThresholdEnd =
-      1.0; // Adjust as needed for visibility range
-  final double signpostPositionX = 5; // X position of the HOME signpost
-  final double signpostOffsetX = 70; // Offset to center the card above the
+  final double signpostPositionX = 5;
+  final double signpostOffsetX = 70;
   final double leftLimit = 0.25;
   final double rightLimit = 0.75;
-
-  static const double floorHeight = 63; // perfect height touching the floor
+  static const double floorHeight = 63;
 
   void startLeft() {
     if (!movingLeft) {
@@ -64,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _isLoopRunning = true;
 
     while (movingLeft || movingRight) {
+      if (!mounted) break;
       setState(() {
         if (movingLeft) _moveLeft();
         if (movingRight) _moveRight();
@@ -76,11 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _moveLeft() {
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // mobile boost
     final bool isMobile = screenWidth < 600;
     final double speedBoost = isMobile ? 1.4 : 1.0;
-
     final double carSpeed = screenWidth * 0.005 * speedBoost;
     final double worldSpeed = screenWidth * 0.004 * speedBoost;
 
@@ -93,11 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _moveRight() {
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // mobile boost
     final bool isMobile = screenWidth < 600;
     final double speedBoost = isMobile ? 1.4 : 1.0;
-
     final double carSpeed = screenWidth * 0.005 * speedBoost;
     final double worldSpeed = screenWidth * 0.004 * speedBoost;
 
@@ -110,6 +102,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Force show game override
+    if (_forceShowGame) return _buildGameWorld();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double width = constraints.maxWidth;
+        double height = constraints.maxHeight;
+
+        bool showGame = false;
+
+        if (height < 360) {
+          showGame = false;
+        } else if (width < 600) {
+          showGame = true; // Mobile
+        } else if (width >= 600 && width < 1000) {
+          showGame = false; // Tablet / Half window
+        } else {
+          showGame = true; // Desktop
+        }
+
+        if (!showGame) {
+          return OptimizedProfileLayout(
+            onUnlockGame: () {
+              setState(() {
+                _forceShowGame = true;
+              });
+            },
+          );
+        }
+
+        return _buildGameWorld();
+      },
+    );
+  }
+
+  Widget _buildGameWorld() {
     return Stack(
       children: [
         // SKY
@@ -126,23 +154,15 @@ class _HomeScreenState extends State<HomeScreen> {
           child: FloorWidget(position: worldX * floorParallax),
         ),
 
-        // -------------------------
-        // SIGNPOSTS (6 total)
-        // -------------------------
-
-        // HOME SIGNPOST
+        // SIGNPOSTS
         SignpostWidget(
           worldX: worldX,
           positionX: 300,
           floorHeight: floorHeight,
           asset: 'assets/signpost-home.png',
           width: 140,
-          onTap: () {
-            // Already on home → do nothing
-          },
+          onTap: () {},
         ),
-
-        // ABOUT ME
         SignpostWidget(
           worldX: worldX,
           positionX: 900,
@@ -156,8 +176,6 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
-
-        // SKILLS
         SignpostWidget(
           worldX: worldX,
           positionX: 1500,
@@ -165,8 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
           asset: 'assets/signpost-skills.png',
           width: 140,
         ),
-
-        // LEADERSHIP
         SignpostWidget(
           worldX: worldX,
           positionX: 2100,
@@ -174,8 +190,6 @@ class _HomeScreenState extends State<HomeScreen> {
           asset: 'assets/signpost-leadership.png',
           width: 140,
         ),
-
-        // EXPERIENCE
         SignpostWidget(
           worldX: worldX,
           positionX: 2700,
@@ -183,8 +197,6 @@ class _HomeScreenState extends State<HomeScreen> {
           asset: 'assets/signpost-experience.png',
           width: 140,
         ),
-
-        // PROJECTS
         SignpostWidget(
           worldX: worldX,
           positionX: 3300,
@@ -196,12 +208,10 @@ class _HomeScreenState extends State<HomeScreen> {
         // CAR
         CarWidget(screenX: carX),
 
-        // Define a threshold around the starting position to show the card
-
-        // Then use this in build method:
+        // PROFILE CARD
         Positioned(
           left: worldX + signpostPositionX + signpostOffsetX,
-          bottom: floorHeight + 150, // above the floor
+          bottom: floorHeight + 150,
           child: const ProfileDetailsCard(),
         ),
 
