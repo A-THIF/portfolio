@@ -19,8 +19,9 @@ class ProfileDetailsCard extends StatelessWidget {
         // If placed in a Stack/ScrollView, constraints might be infinite.
         // We fallback to the full screen size in that case.
         if (maxWidth.isInfinite) maxWidth = MediaQuery.of(context).size.width;
-        if (maxHeight.isInfinite)
+        if (maxHeight.isInfinite) {
           maxHeight = MediaQuery.of(context).size.height;
+        }
 
         // 3. DETERMINE DEVICE TYPE
         final bool isLaptop = maxWidth > 800;
@@ -236,14 +237,6 @@ class ProfileDetailsCard extends StatelessWidget {
     return isVertical
         ? Column(children: buttons)
         : Wrap(alignment: WrapAlignment.center, children: buttons);
-  }
-
-  Widget _btnText(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.luckiestGuy(fontSize: 16, color: Colors.white),
-      softWrap: true,
-    );
   }
 
   Widget _buildSocialIcons({required double iconSize}) {
