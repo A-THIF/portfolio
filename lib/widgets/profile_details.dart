@@ -16,8 +16,9 @@ class ProfileDetailsCard extends StatelessWidget {
 
         // Handle infinite constraints (e.g., inside ScrollView)
         if (maxWidth.isInfinite) maxWidth = MediaQuery.of(context).size.width;
-        if (maxHeight.isInfinite)
+        if (maxHeight.isInfinite) {
           maxHeight = MediaQuery.of(context).size.height;
+        }
 
         final bool isLaptop = maxWidth > 800;
 

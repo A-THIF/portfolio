@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../widgets/menu_button.dart';
-import 'portffolio_scroll_screen.dart';
+import 'portfolio_scroll_screen.dart';
 
 class OptimizedProfileLayout extends StatefulWidget {
   // Function from parent to call when the game is unlocked

@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 // IMPORT YOUR WIDGETS
 import '../widgets/clouds_widget.dart';
-import '../widgets/floor_widget.dart';
 import '../widgets/game_card.dart';
 
 class PortfolioScrollPage extends StatefulWidget {

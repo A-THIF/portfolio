@@ -101,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Force show game override
+    // 1. Force override (if user tapped 3 times on Optimized screen)
     if (_forceShowGame) return _buildGameWorld();
 
     return LayoutBuilder(
@@ -111,15 +111,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
         bool showGame = false;
 
-        if (height < 360) {
-          showGame = false;
-        } else if (width < 600) {
-          showGame = true; // Mobile
-        } else if (width >= 600 && width < 1000) {
-          showGame = false; // Tablet / Half window
-        } else {
-          showGame = true; // Desktop
+        // -----------------------------------------------------------
+        // 📏 RESPONSIVE LOGIC
+        // -----------------------------------------------------------
+
+        // 1. LAPTOP / DESKTOP (Width >= 1000)
+        // We check this FIRST to protect Laptops from the 850px height check.
+        // Laptops are landscape, so their height is often small (600-800px).
+        // We use a lower safety threshold (400px) for them.
+        if (width >= 1000) {
+          if (height < 400) {
+            showGame = false; // Too short even for laptop
+          } else {
+            showGame = true; // Show Game
+          }
         }
+        // 2. MOBILE / TABLET (Width < 1000)
+        else {
+          // Here we apply the strict height check you requested (850px).
+          // This ensures only very tall mobile screens show the game.
+          if (height < 850) {
+            showGame = false;
+          } else if (width < 600) {
+            showGame = true; // Tall Mobile -> Show Game
+          } else {
+            showGame = false; // Tablet Zone (600-1000) -> Optimized
+          }
+        }
+        // -----------------------------------------------------------
 
         if (!showGame) {
           return OptimizedProfileLayout(
