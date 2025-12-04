@@ -7,27 +7,29 @@ class CloudsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final fixedWidth = 1200.0;
+    // Assume cloud image is wide enough to loop
+    final double fixedWidth = 1000.0; 
 
-    final tiles = (screenWidth / fixedWidth).ceil() + 1;
-    final effectiveX = position % fixedWidth;
+    // Calculate how many images needed to fill screen + 1 buffer
+    final int tiles = (screenWidth / fixedWidth).ceil() + 1;
+    
+    // Calculate offset for smooth scrolling
+    final double effectiveX = position % fixedWidth;
 
-    return SizedBox(
-      width: double.infinity,
-      height: 200,
-      child: Stack(
-        children: List.generate(tiles, (index) {
-          return Positioned(
-            left: fixedWidth * index - effectiveX,
-            top: 0,
-            child: Image.asset(
-              'assets/images/clouds.png',
-              width: fixedWidth,
-              fit: BoxFit.cover,
-            ),
-          );
-        }),
-      ),
+    return Stack(
+      children: List.generate(tiles, (index) {
+        return Positioned(
+          // Logic: Tile Index * Width - Scroll Offset
+          left: (fixedWidth * index) - effectiveX,
+          top: 0,
+          bottom: 0, // Stretch vertically to fit container
+          child: Image.asset(
+            'assets/images/clouds.png',
+            width: fixedWidth,
+            fit: BoxFit.cover, // Ensures it covers the area
+          ),
+        );
+      }),
     );
   }
 }
