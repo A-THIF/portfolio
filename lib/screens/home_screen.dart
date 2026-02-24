@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 
 // IMPORTS
 import '../widgets/menu_button.dart';
@@ -234,15 +235,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // 5. SOCIALS
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _socialIcon(FontAwesomeIcons.linkedin),
-                        const SizedBox(width: 25),
-                        _socialIcon(FontAwesomeIcons.github),
-                        const SizedBox(width: 25),
-                        _socialIcon(FontAwesomeIcons.envelope),
-                      ],
-                    ),
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    _socialIcon(
+      FontAwesomeIcons.linkedin,
+      PortfolioData.linkedin,
+    ),
+    const SizedBox(width: 25),
+    _socialIcon(
+      FontAwesomeIcons.github,
+      PortfolioData.github,
+    ),
+    const SizedBox(width: 25),
+    _socialIcon(
+      FontAwesomeIcons.envelope,
+      PortfolioData.email,
+    ),
+  ],
+),
 
                     SizedBox(height: isSmallHeight ? 15 : 30),
 
@@ -250,37 +260,75 @@ class _HomeScreenState extends State<HomeScreen> {
                     GestureDetector(
                       onTap: _handleSecretTap,
                       child: Container(
-                        padding: const EdgeInsets.all(10),
-                        color: Colors.transparent,
-                        child: Column(
-                          children: [
-                            Text(
-                              "(Want to play the game?)",
-                              style: GoogleFonts.fredoka(
-                                fontSize: 12,
-                                color: Colors.white54,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _clickCount > 0
-                                  ? "Unlock Game? (${3 - _clickCount})"
-                                  : "Tap 3 times here to start",
-                              style: GoogleFonts.fredoka(
-                                fontSize: 12,
-                                color: Colors.yellow.withOpacity(0.7),
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                        height: 40,
+                          color: Colors.transparent,
+                      //   padding: const EdgeInsets.all(10),
+                      //   color: Colors.transparent,
+                      //   child: Column(
+                      //     children: [
+                      //       Text(
+                      //         "(Want to play the game?)",
+                      //         style: GoogleFonts.fredoka(
+                      //           fontSize: 12,
+                      //           color: Colors.white54,
+                      //         ),
+                      //       ),
+                      //       const SizedBox(height: 4),
+                      //       Text(
+                      //         _clickCount > 0
+                      //             ? "Unlock Game? (${3 - _clickCount})"
+                      //             : "Tap 3 times here to start",
+                      //         style: GoogleFonts.fredoka(
+                      //           fontSize: 12,
+                      //           color: Colors.yellow.withOpacity(0.7),
+                      //           decoration: TextDecoration.underline,
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                       ),
                     ),
                   ],
                 ),
               ),
             ),
           ),
+          // 🎮 SECRET TAP AREA
+          if (_clickCount < 3)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onTap: _handleSecretTap,
+                child: Container(
+                  height: 40,
+                  color: Colors.transparent,
+                  child: Column(
+                    children: [
+                      Text(
+                        "(Want to play the game?)",
+                        style: GoogleFonts.fredoka(
+                          fontSize: 12,
+                          color: Colors.white54,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _clickCount > 0
+                            ? "Unlock Game? (${3 - _clickCount})"
+                            : "Tap 3 times here to start",
+                        style: GoogleFonts.fredoka(
+                          fontSize: 12,
+                          color: Colors.yellow.withOpacity(0.7),
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // 🎮 LOADING OVERLAY
           if (_isLoadingGame)
@@ -324,12 +372,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _socialIcon(IconData icon) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
+Widget _socialIcon(IconData icon, String url) {
+  return MouseRegion(
+    cursor: SystemMouseCursors.click,
+    child: GestureDetector(
+      onTap: () async {
+        final Uri uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
       child: Icon(icon, color: Colors.yellow, size: 35),
-    );
-  }
+    ),
+  );
 }
 
 // WARNING DIALOG
