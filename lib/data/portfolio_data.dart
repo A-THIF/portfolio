@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 // 1. DATA MODELS
 class ProjectItem {
   final String title;

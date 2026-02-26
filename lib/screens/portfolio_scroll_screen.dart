@@ -227,7 +227,7 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
 
   // --- WIDGET HELPERS ---
   Widget _buildFooter() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 100,
       child: Stack(
