@@ -67,7 +67,7 @@ class HillsBackground extends StatelessWidget {
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Image.asset(
-                    'assets/images/hill_1.png',
+                    'assets/images/hill_2.png',
                     height: 170,
                     fit: BoxFit.contain,
                   ),
