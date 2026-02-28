@@ -8,6 +8,7 @@ import '../data/portfolio_data.dart';
 import '../widgets/hills_background.dart';
 import '../widgets/home_screen_buttons.dart';
 import 'lock_screen.dart';
+import '../widgets/clouds_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -87,6 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Stack(
             children: [
               const HillsBackground(),
+              // Moving Clouds Layer
+              const CloudsWidget(),
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(

@@ -124,15 +124,9 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
 
           // LAYER 2: MOVING CLOUDS (Fixed!)
           // 🔥 FIX 1: Wrapped in Positioned.fill so it takes full screen height (like the game)
+          // LAYER 2: MOVING CLOUDS
           Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                // 🔥 FIX 2: Multiplied by 1200 (Image Width) for perfect looping
-                final double speed = _controller.value * 1200;
-                return CloudsWidget(position: speed);
-              },
-            ),
+            child: CloudsWidget(), // self-animating now
           ),
 
           // LAYER 3: DARK OVERLAY
@@ -142,7 +136,6 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
           Column(
             children: [
               _buildNavBar(context),
-
               Expanded(
                 child: SingleChildScrollView(
                   controller: _scrollController,

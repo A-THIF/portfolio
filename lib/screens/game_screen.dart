@@ -122,9 +122,7 @@ class _GameScreenState extends State<GameScreen> {
           ),
 
           // CLOUDS
-          Positioned.fill(
-            child: CloudsWidget(position: -worldX * cloudParallax),
-          ),
+          CloudsWidget(),
 
           // FLOOR
           Align(

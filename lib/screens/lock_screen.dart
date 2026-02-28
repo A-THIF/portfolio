@@ -1,8 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:portfolio/widgets/clouds_widget.dart';
 import '../widgets/hills_background.dart';
-import '../data/portfolio_data.dart';
+import '../widgets/clouds_widget.dart';
 
 // Enum to manage Windows-style screen transitions
 enum LockState { input, provideDetails, incorrect }
@@ -46,6 +47,8 @@ class _LockScreenState extends State<LockScreen> {
       body: Stack(
         children: [
           const HillsBackground(),
+          // Moving Clouds Layer
+          const CloudsWidget(),
           // Blur Layer
           Positioned.fill(
             child: BackdropFilter(
