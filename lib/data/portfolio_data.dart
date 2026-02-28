@@ -48,6 +48,8 @@ class PortfolioData {
   static const String name = "MOHAMED ATHIF N";
   static const String tagline = "INSPIRE & INFLUENCE";
   static const String profileImage = "assets/images/profile.png";
+  static const String portfolioButton = "assets/images/portfolio_button.png";
+  static const String resumeButton = "assets/images/resume_button.png";
 
   // 🔥 ADDED FOOTER YEAR
   static const String footerYear = "Last Update @ 2025";

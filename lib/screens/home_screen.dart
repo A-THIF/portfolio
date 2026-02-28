@@ -4,10 +4,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 // IMPORTS
-import '../widgets/menu_button.dart';
 import '../data/portfolio_data.dart';
-import 'portfolio_scroll_screen.dart'; // Ensure this file exists
+// Ensure this file exists
 import 'game_screen.dart'; // Ensure this file exists
+import '../widgets/hills_background.dart';
+import '../widgets/home_screen_buttons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -133,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFF2666A6),
       body: Stack(
         children: [
+          const HillsBackground(),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -207,30 +209,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     SizedBox(height: isSmallHeight ? 15 : 30),
 
                     // 4. MENU BUTTONS
-                    Wrap(
-                      spacing: 15,
-                      runSpacing: 10,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        _buildButton(
-                          "ABOUT",
-                          'assets/images/about_button.png',
-                          'ABOUT',
-                        ),
-                        _buildButton(
-                          "EXP",
-                          'assets/images/experience_button.png',
-                          'EXP',
-                        ),
-                        _buildButton(
-                          "PROJECTS",
-                          'assets/images/projects_button.png',
-                          'PROJECTS',
-                        ),
-                      ],
-                    ),
+                    const HomeScreenButtons(),
 
-                    SizedBox(height: isSmallHeight ? 15 : 30),
+                    SizedBox(height: isSmallHeight ? 15 : 10),
 
                     // 5. SOCIALS
                     Row(
@@ -315,22 +296,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildButton(String label, String asset, String sectionKey) {
-    return MenuButton(
-      imagePath: asset,
-      width: 110,
-      height: 45,
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PortfolioScrollPage(initialSection: sectionKey),
-          ),
-        );
-      },
     );
   }
 
