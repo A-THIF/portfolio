@@ -16,6 +16,7 @@ dependencies:
   url_launcher: ^6.3.2
   web: ^0.5.0
   intl: ^0.20.2
+  battery_plus: ^6.0.2
 
 
 dev_dependencies:
@@ -75,3 +76,4 @@ flutter:
     - assets/images/portfolio_button.png
     - assets/images/resume_button.png
     - assets/files/resume.pdf
+    - assets/images/mushroom.png

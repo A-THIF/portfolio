@@ -1,7 +1,9 @@
+import 'dart:async'; // for Timer
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/services.dart';
+import 'package:portfolio/widgets/retro_battery_age.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/portfolio_data.dart';
@@ -19,6 +21,24 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ValueNotifier<DateTime> _currentTime = ValueNotifier(DateTime.now());
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _currentTime.value = DateTime.now();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    _currentTime.dispose();
+    super.dispose();
+  }
+
   // --- Navigate to Lock Screen ---
   void _navigateToLock() {
     Navigator.push(
@@ -30,7 +50,6 @@ class _HomeScreenState extends State<HomeScreen> {
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curve =
               CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-
           return FadeTransition(
             opacity: curve,
             child: SlideTransition(
@@ -95,6 +114,31 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const HillsBackground(),
               const CloudsWidget(),
+
+              // --- Retro Clock ---
+              Positioned(
+                left: 20,
+                top: 90,
+                child: Transform.scale(
+                  scale: clockScale,
+                  alignment: Alignment.centerLeft,
+                  child: ValueListenableBuilder<DateTime>(
+                    valueListenable: _currentTime,
+                    builder: (context, time, child) {
+                      return RetroClock(currentTime: time);
+                    },
+                  ),
+                ),
+              ),
+
+              // --- Battery + Lives ---
+              ValueListenableBuilder<DateTime>(
+                valueListenable: _currentTime,
+                builder: (context, time, child) {
+                  return RetroBatteryAge(currentTime: time);
+                },
+              ),
+
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
@@ -104,47 +148,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // PROFILE IMAGE + CLOCK
-                        Stack(
-                          children: [
-                            // Retro Clock at left edge
-                            Positioned(
-                              left: 0,
-                              child: Transform.scale(
-                                scale: clockScale,
-                                alignment: Alignment.centerLeft,
-                                child: const RetroClock(),
+                        // PROFILE IMAGE
+                        Container(
+                          width: profileWidth,
+                          height: profileWidth,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.yellow, width: 4),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    Colors.black.withAlpha((0.3 * 255).toInt()),
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
                               ),
-                            ),
-                            // Centered profile
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: profileWidth,
-                                  height: profileWidth,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: Colors.yellow, width: 4),
-                                    boxShadow: [
-                                      BoxShadow(
-                                          color: Colors.black.withOpacity(0.3),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 5)),
-                                    ],
-                                  ),
-                                  child: const CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage(PortfolioData.profileImage),
-                                    backgroundColor: Colors.black26,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: const CircleAvatar(
+                            backgroundImage:
+                                AssetImage(PortfolioData.profileImage),
+                            backgroundColor: Colors.black26,
+                          ),
                         ),
-
                         const SizedBox(height: 20),
 
                         // NAME
@@ -166,7 +191,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 5),
 
                         // TAGLINE
@@ -182,7 +206,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 20),
 
                         // MENU BUTTONS
@@ -203,7 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 FontAwesomeIcons.envelope, PortfolioData.email),
                           ],
                         ),
-
                         const SizedBox(height: 30),
 
                         // SLIDE UP TO UNLOCK TEXT
@@ -261,7 +283,7 @@ class _SlideUpWidgetState extends State<SlideUpWidget>
             style: GoogleFonts.fredoka(
               fontSize: 18,
               fontWeight: FontWeight.w300,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withAlpha((0.9 * 255).toInt()),
               letterSpacing: 1.2,
             ),
           ),
@@ -270,7 +292,7 @@ class _SlideUpWidgetState extends State<SlideUpWidget>
             "or press Space",
             style: GoogleFonts.fredoka(
               fontSize: 12,
-              color: Colors.white38,
+              color: Colors.white.withAlpha((0.38 * 255).toInt()),
             ),
           ),
         ],
