@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
+
 // IMPORTS
 import '../data/portfolio_data.dart';
 // Ensure this file exists
@@ -125,6 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+// Inside _HomeScreenState
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -241,30 +244,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: _handleSecretTap,
                       child: Container(
                         height: 50,
-                        color: Colors.transparent,
+                        color: Colors.black.withValues(alpha: 0.3),
                         padding: const EdgeInsets.all(10),
                         child: Column(
-                          // children: [
-                          //   Text(
-                          //     "(Want to play the game?)",
-                          //     style: GoogleFonts.fredoka(
-                          //       fontSize: 12,
-                          //       color: Colors.white54,
-                          //     ),
-                          //   ),
-                          //   const SizedBox(height: 4),
-                          //   Text(
-                          //     _clickCount > 0
-                          //         ? "Unlock Game? (${3 - _clickCount})"
-                          //         : "Tap 3 times here to start",
-                          //     style: GoogleFonts.fredoka(
-                          //       fontSize: 12,
-                          //       color: Colors.yellow.withOpacity(0.7),
-                          //       decoration: TextDecoration.underline,
-                          //     ),
-                          //   ),
-                          // ],
-                        ),
+                            // children: [
+                            //   Text(
+                            //     "(Want to play the game?)",
+                            //     style: GoogleFonts.fredoka(
+                            //       fontSize: 12,
+                            //       color: Colors.white54,
+                            //     ),
+                            //   ),
+                            //   const SizedBox(height: 4),
+                            //   Text(
+                            //     _clickCount > 0
+                            //         ? "Unlock Game? (${3 - _clickCount})"
+                            //         : "Tap 3 times here to start",
+                            //     style: GoogleFonts.fredoka(
+                            //       fontSize: 12,
+                            //       color: Colors.yellow.withOpacity(0.7),
+                            //       decoration: TextDecoration.underline,
+                            //     ),
+                            //   ),
+                            // ],
+                            ),
                       ),
                     ),
                   ],
@@ -326,7 +329,6 @@ class GameWarningDialog extends StatefulWidget {
 class _GameWarningDialogState extends State<GameWarningDialog> {
   int _secondsRemaining = 5;
   Timer? _timer;
-  bool _assetsLoaded = false;
   @override
   void initState() {
     super.initState();
@@ -352,9 +354,6 @@ class _GameWarningDialogState extends State<GameWarningDialog> {
       if (mounted) {
         await precacheImage(AssetImage(path), context);
       }
-    }
-    if (mounted) {
-      setState(() => _assetsLoaded = true);
     }
   }
 

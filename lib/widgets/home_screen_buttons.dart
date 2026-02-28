@@ -1,21 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart'; // 🚀 Added this
 import '../data/portfolio_data.dart';
 import '../screens/portfolio_scroll_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreenButtons extends StatelessWidget {
-  const HomeScreenButtons({super.key});
+  final VoidCallback? onResumePressed;
+
+  const HomeScreenButtons({super.key, this.onResumePressed});
+
+  // 🔗 The "Bulletproof" Link Logic
+  Future<void> _handleResumeClick(BuildContext context) async {
+    // This is the official Google Drive view link format
+    const String resumeUrl =
+        "https://drive.google.com/file/d/1HmuNQE84kJaUaCy8EfuNgI2BOs2bb9FP/view?usp=sharing";
+    final Uri uri = Uri.parse(resumeUrl);
+
+    try {
+      // mode: LaunchMode.externalApplication forces it into a new Chrome tab
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch $resumeUrl';
+      }
+    } catch (e) {
+      debugPrint("Error launching resume: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Oops! Could not open the resume.")),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width >= 800;
 
-    // Button size
     final double buttonWidth = 120;
     final double buttonHeight = 160;
-
-    // Gap settings
     final double spacing = isDesktop ? 15 : 5;
     final double runSpacing = isDesktop ? 10 : 5;
 
@@ -26,12 +49,11 @@ class HomeScreenButtons extends StatelessWidget {
       children: [
         _buildButton(
           context,
-          PortfolioData.portfolioButton, // added in portfolio_data.dart
+          PortfolioData.portfolioButton,
           "PORTFOLIO",
           buttonWidth,
           buttonHeight,
           () {
-            // Navigate to portfolio scroll screen
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PortfolioScrollPage()),
@@ -40,18 +62,12 @@ class HomeScreenButtons extends StatelessWidget {
         ),
         _buildButton(
           context,
-          PortfolioData.resumeButton, // added in portfolio_data.dart
+          PortfolioData.resumeButton,
           "RESUME",
           buttonWidth,
           buttonHeight,
-          () {
-            // Open resume in browser / drive
-            // Example: Google Drive link
-            final Uri uri = Uri.parse(
-              "https://drive.google.com/file/d/1HmuNQE84kJaUaCy8EfuNgI2BOs2bb9FP/view?usp=sharing",
-            );
-            launchUrl(uri, mode: LaunchMode.externalApplication);
-          },
+          // 🔥 Directly calling the link handler here
+          () => _handleResumeClick(context),
         ),
       ],
     );
@@ -74,6 +90,8 @@ class HomeScreenButtons extends StatelessWidget {
           padding: EdgeInsets.zero,
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
+          // Removes the grey hover highlight to keep the Mario vibe
+          overlayColor: Colors.transparent,
         ),
         child: Image.asset(assetPath, fit: BoxFit.contain),
       ),

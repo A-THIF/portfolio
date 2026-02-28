@@ -20,9 +20,8 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
     'assets/images/clouds.png',
     'assets/images/grass_floor.png',
     'assets/images/profile.png',
-    'assets/images/about_button.png',
-    'assets/images/experience_button.png',
-    'assets/images/projects_button.png',
+    'assets/images/portfolio_button.png',
+    'assets/images/resume_button.png',
   ];
 
   @override
