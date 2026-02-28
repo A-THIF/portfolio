@@ -1,104 +1,119 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
 
 class LoadingScreenOpening extends StatefulWidget {
-  const LoadingScreenOpening({super.key});
+  final VoidCallback onLoadingComplete;
+
+  const LoadingScreenOpening({super.key, required this.onLoadingComplete});
 
   @override
   State<LoadingScreenOpening> createState() => _LoadingScreenOpeningState();
 }
 
 class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _rotationController;
-  late AnimationController _fadeController;
 
   int progress = 0;
-  bool showHome = false;
+
+  final List<String> _assets = [
+    'assets/images/sky.png',
+    'assets/images/clouds.png',
+    'assets/images/grass_floor.png',
+    'assets/images/profile.png',
+    'assets/images/about_button.png',
+    'assets/images/experience_button.png',
+    'assets/images/projects_button.png',
+  ];
 
   @override
   void initState() {
     super.initState();
 
+    // 🔁 Logo rotation animation
     _rotationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
 
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-
-    _startLoading();
+    // Wait until widget is fully built before preloading
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startPreloading();
+    });
   }
 
-  Future<void> _startLoading() async {
-    for (int i = 0; i <= 100; i++) {
-      await Future.delayed(const Duration(milliseconds: 25));
+  Future<void> _startPreloading() async {
+    int loaded = 0;
+
+    for (String path in _assets) {
+      try {
+        await precacheImage(AssetImage(path), context);
+      } catch (e) {
+        debugPrint("Failed to load $path");
+      }
+
+      loaded++;
+
       if (mounted) {
         setState(() {
-          progress = i;
+          progress = ((loaded / _assets.length) * 100).toInt();
         });
       }
+
+      await Future.delayed(const Duration(milliseconds: 100));
     }
 
-    await _fadeController.forward();
-
-    if (mounted) {
-      setState(() {
-        showHome = true;
-      });
-    }
+    widget.onLoadingComplete();
   }
 
   @override
   void dispose() {
     _rotationController.dispose();
-    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-
-    double logoSize = screenWidth * 0.18;
-    logoSize = logoSize.clamp(70.0, 160.0);
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 900),
-      child: showHome
-          ? const HomeScreen()
-          : Scaffold(
-              backgroundColor: Colors.black,
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Rotating Logo
-                    RotationTransition(
-                      turns: _rotationController,
-                      child: Image.asset(
-                        "assets/images/loading_logo.png",
-                        width: logoSize, // ✅ USE IT HERE
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Percentage
-                    Text(
-                      "$progress%",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 🔄 Rotating Logo
+            RotationTransition(
+              turns: _rotationController,
+              child: Image.asset(
+                'assets/images/loading_logo.png', // your logo path
+                width: 80,
               ),
             ),
+
+            const SizedBox(height: 40),
+
+            // 📊 Percentage Text
+            Text(
+              "$progress%",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 📈 Progress Bar
+            SizedBox(
+              width: 200,
+              child: LinearProgressIndicator(
+                value: progress / 100,
+                backgroundColor: Colors.grey[800],
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

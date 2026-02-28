@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/loading_screen_opening.dart';
+import 'screens/app_start_wrapper.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Athif Gamified Portfolio',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: const LoadingScreenOpening(),
+      home: const AppStartWrapper(),
     );
   }
 }
