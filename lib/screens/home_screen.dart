@@ -9,6 +9,7 @@ import '../widgets/hills_background.dart';
 import '../widgets/home_screen_buttons.dart';
 import 'lock_screen.dart';
 import '../widgets/clouds_widget.dart';
+import '../widgets/retro_clock.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,14 +28,12 @@ class _HomeScreenState extends State<HomeScreen> {
             const LockScreen(),
         transitionDuration: const Duration(milliseconds: 500),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // A heavy ease-out cubic curve feels more like a physical object
           final curve =
               CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
 
           return FadeTransition(
             opacity: curve,
             child: SlideTransition(
-              // Increased to 0.2 for a more noticeable "rising" effect
               position:
                   Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
                       .animate(curve),
@@ -64,7 +63,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
     final isSmallHeight = size.height < 500;
+
+    // Gap and clock sizing
+    final double profileWidth = (size.height * 0.22).clamp(80.0, 120.0);
+    final double maxGap = 40; // desired gap between clock and profile
+    final double leftSpace = (screenWidth / 2) - profileWidth / 2 - maxGap;
+
+    // Reduce clock size if leftSpace is too small
+    final double clockScale = leftSpace < 80 ? (leftSpace / 80) : 1.0;
 
     return KeyboardListener(
       focusNode: FocusNode()..requestFocus(),
@@ -77,10 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFF2666A6),
         body: GestureDetector(
-          // Makes the entire screen sensitive to the swipe, not just where there is text
           behavior: HitTestBehavior.opaque,
           onVerticalDragEnd: (details) {
-            // Negative velocity means swiping UP
             if (details.primaryVelocity! < -300) {
               _navigateToLock();
             }
@@ -88,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Stack(
             children: [
               const HillsBackground(),
-              // Moving Clouds Layer
               const CloudsWidget(),
               SafeArea(
                 child: Center(
@@ -99,25 +104,45 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // PROFILE IMAGE
-                        Container(
-                          width: (size.height * 0.22).clamp(80.0, 120.0),
-                          height: (size.height * 0.22).clamp(80.0, 120.0),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.yellow, width: 4),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5)),
-                            ],
-                          ),
-                          child: const CircleAvatar(
-                            backgroundImage:
-                                AssetImage(PortfolioData.profileImage),
-                            backgroundColor: Colors.black26,
-                          ),
+                        // PROFILE IMAGE + CLOCK
+                        Stack(
+                          children: [
+                            // Retro Clock at left edge
+                            Positioned(
+                              left: 0,
+                              child: Transform.scale(
+                                scale: clockScale,
+                                alignment: Alignment.centerLeft,
+                                child: const RetroClock(),
+                              ),
+                            ),
+                            // Centered profile
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: profileWidth,
+                                  height: profileWidth,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.yellow, width: 4),
+                                    boxShadow: [
+                                      BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 5)),
+                                    ],
+                                  ),
+                                  child: const CircleAvatar(
+                                    backgroundImage:
+                                        AssetImage(PortfolioData.profileImage),
+                                    backgroundColor: Colors.black26,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 20),
