@@ -17,7 +17,7 @@ class PortfolioScrollPage extends StatefulWidget {
 }
 
 class _PortfolioScrollPageState extends State<PortfolioScrollPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _controller;
   final ScrollController _scrollController = ScrollController();
 
@@ -29,14 +29,20 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
   final GlobalKey _connectKey = GlobalKey();
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 20),
-    )..repeat(); // Loop forever
+    )..repeat();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _precacheAssets(); // 🔥 ADD THIS
+
       if (widget.initialSection != null) {
         _handleInitialScroll(widget.initialSection!);
       }
@@ -74,6 +80,14 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
     }
   }
 
+  Future<void> _precacheAssets() async {
+    await precacheImage(const AssetImage('assets/images/sky.png'), context);
+    await precacheImage(
+      const AssetImage('assets/images/grass_floor.png'),
+      context,
+    );
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -94,12 +108,18 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // for AutomaticKeepAliveClientMixin
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           // LAYER 1: SKY
           Positioned.fill(
-            child: Image.asset('assets/images/sky.png', fit: BoxFit.cover),
+            child: AnimatedOpacity(
+              opacity: 1,
+              duration: const Duration(milliseconds: 300),
+              child: Image.asset('assets/images/sky.png', fit: BoxFit.cover),
+            ),
           ),
 
           // LAYER 2: MOVING CLOUDS (Fixed!)
