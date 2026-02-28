@@ -213,7 +213,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // 4. MENU BUTTONS
                     const HomeScreenButtons(),
-
                     SizedBox(height: isSmallHeight ? 15 : 10),
 
                     // 5. SOCIALS
@@ -244,7 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: _handleSecretTap,
                       child: Container(
                         height: 50,
-                        color: Colors.black.withValues(alpha: 0.3),
+                        width: 200,
+                        color: Colors.transparent,
                         padding: const EdgeInsets.all(10),
                         child: Column(
                             // children: [
