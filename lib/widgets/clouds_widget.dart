@@ -10,20 +10,15 @@ class CloudsWidget extends StatefulWidget {
 class _CloudsWidgetState extends State<CloudsWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  double _position = 0;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 60), // speed of clouds
-    )..addListener(() {
-        setState(() {
-          _position += 1; // change speed here
-        });
-      });
-    _controller.repeat(); // loop forever
+      duration: const Duration(seconds: 40), // master speed
+    )..repeat();
   }
 
   @override
@@ -35,23 +30,41 @@ class _CloudsWidgetState extends State<CloudsWidget>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final double fixedWidth = 1000.0;
-    final int tiles = (screenWidth / fixedWidth).ceil() + 1;
-    final double effectiveX = _position % fixedWidth;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-    return Stack(
-      children: List.generate(tiles, (index) {
-        return Positioned(
-          left: (fixedWidth * index) - effectiveX,
-          top: 0,
-          bottom: 0,
-          child: Image.asset(
-            'assets/images/clouds.png',
-            width: fixedWidth,
-            fit: BoxFit.cover,
-          ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        // Different speeds
+        double offsetSlow = _controller.value * screenWidth;
+        double offsetFast = _controller.value * screenWidth * 1.5;
+
+        return Stack(
+          children: [
+            /// ☁️ CLOUD 1 (Top - Slower)
+            Positioned(
+              left: -offsetSlow,
+              top: screenHeight * 0.02,
+              child: Image.asset(
+                'assets/images/clouds.png',
+                width: screenWidth,
+                fit: BoxFit.fitWidth,
+              ),
+            ),
+
+            /// ☁️ CLOUD 2 (Lower - Faster)
+            Positioned(
+              left: screenWidth - offsetFast,
+              top: screenHeight * 0.05,
+              child: Image.asset(
+                'assets/images/clouds.png',
+                width: screenWidth,
+                fit: BoxFit.fitWidth,
+              ),
+            ),
+          ],
         );
-      }),
+      },
     );
   }
 }

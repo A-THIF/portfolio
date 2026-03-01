@@ -77,3 +77,7 @@ flutter:
     - assets/images/resume_button.png
     - assets/files/resume.pdf
     - assets/images/mushroom.png
+    - assets/profiles/avatar_1.png
+    - assets/profiles/avatar_2.png
+    - assets/profiles/avatar_3.png
+    - assets/profiles/original.png

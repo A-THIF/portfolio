@@ -1,4 +1,4 @@
-import 'dart:async'; // for Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -12,6 +12,7 @@ import '../widgets/home_screen_buttons.dart';
 import 'lock_screen.dart';
 import '../widgets/clouds_widget.dart';
 import '../widgets/retro_clock.dart';
+import '../widgets/profile_background.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,12 +22,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ValueNotifier<DateTime> _currentTime = ValueNotifier(DateTime.now());
+  final ValueNotifier<DateTime> _currentTime =
+      ValueNotifier<DateTime>(DateTime.now());
+  final FocusNode _focusNode = FocusNode();
   late Timer _timer;
+  int _selectedProfileIndex = 0;
+  bool _isNavigating = false;
 
   @override
   void initState() {
     super.initState();
+    _focusNode.requestFocus();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       _currentTime.value = DateTime.now();
     });
@@ -36,18 +42,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _timer.cancel();
     _currentTime.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  // --- Navigate to Lock Screen ---
   void _navigateToLock() {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const LockScreen(),
+        pageBuilder: (_, __, ___) => const LockScreen(),
         transitionDuration: const Duration(milliseconds: 500),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        transitionsBuilder: (_, animation, __, child) {
           final curve =
               CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
           return FadeTransition(
@@ -61,40 +69,35 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-    );
+    ).then((_) {
+      _isNavigating = false;
+      _focusNode.requestFocus();
+    });
   }
 
   Widget _socialIcon(IconData icon, String url) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () async {
-          final Uri uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        },
-        child: Icon(icon, color: Colors.yellow, size: 35),
-      ),
+    return GestureDetector(
+      onTap: () async {
+        final Uri uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Icon(icon, color: Colors.yellow, size: 35),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final screenWidth = size.width;
     final isSmallHeight = size.height < 500;
 
-    // Gap and clock sizing
-    final double profileWidth = (size.height * 0.22).clamp(80.0, 120.0);
-    final double maxGap = 40; // desired gap between clock and profile
-    final double leftSpace = (screenWidth / 2) - profileWidth / 2 - maxGap;
-
-    // Reduce clock size if leftSpace is too small
-    final double clockScale = leftSpace < 80 ? (leftSpace / 80) : 1.0;
+    final profileWidth = (size.height * 0.22).clamp(80.0, 120.0);
+    final leftSpace = (size.width / 2) - profileWidth / 2 - 40;
+    final clockScale = leftSpace < 80 ? (leftSpace / 80) : 1.0;
 
     return KeyboardListener(
-      focusNode: FocusNode()..requestFocus(),
+      focusNode: _focusNode,
       onKeyEvent: (event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.space) {
@@ -105,17 +108,34 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFF2666A6),
         body: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onVerticalDragEnd: (details) {
-            if (details.primaryVelocity! < -300) {
+          onPanEnd: (details) {
+            final velocityX = details.velocity.pixelsPerSecond.dx;
+            final velocityY = details.velocity.pixelsPerSecond.dy;
+
+            // Slide UP to unlock
+            if (velocityY < -400) {
               _navigateToLock();
+            }
+            // Horizontal Swipe to change profile
+            else if (velocityX > 400) {
+              setState(() {
+                _selectedProfileIndex = (_selectedProfileIndex -
+                        1 +
+                        ProfileBackground.themes.length) %
+                    ProfileBackground.themes.length;
+              });
+            } else if (velocityX < -400) {
+              setState(() {
+                _selectedProfileIndex = (_selectedProfileIndex + 1) %
+                    ProfileBackground.themes.length;
+              });
             }
           },
           child: Stack(
             children: [
+              ProfileBackground.getBackgroundWidget(_selectedProfileIndex),
               const HillsBackground(),
               const CloudsWidget(),
-
-              // --- Retro Clock ---
               Positioned(
                 left: 20,
                 top: 90,
@@ -124,55 +144,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.centerLeft,
                   child: ValueListenableBuilder<DateTime>(
                     valueListenable: _currentTime,
-                    builder: (context, time, child) {
-                      return RetroClock(currentTime: time);
-                    },
+                    builder: (_, time, __) => RetroClock(currentTime: time),
                   ),
                 ),
               ),
-
-              // --- Battery + Lives ---
               ValueListenableBuilder<DateTime>(
                 valueListenable: _currentTime,
-                builder: (context, time, child) {
-                  return RetroBatteryAge(currentTime: time);
-                },
+                builder: (_, time, __) => RetroBatteryAge(currentTime: time),
               ),
-
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    // Disable internal scrolling so the GestureDetector catches swipes
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: EdgeInsets.symmetric(
-                        horizontal: 20, vertical: isSmallHeight ? 10 : 30),
+                      horizontal: 20,
+                      vertical: isSmallHeight ? 10 : 30,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // PROFILE IMAGE
-                        Container(
-                          width: profileWidth,
-                          height: profileWidth,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.yellow, width: 4),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    Colors.black.withAlpha((0.3 * 255).toInt()),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: const CircleAvatar(
-                            backgroundImage:
-                                AssetImage(PortfolioData.profileImage),
-                            backgroundColor: Colors.black26,
-                          ),
+                        DynamicBackground(
+                          index: _selectedProfileIndex,
+                          onNext: () => setState(() {
+                            _selectedProfileIndex =
+                                (_selectedProfileIndex + 1) %
+                                    ProfileBackground.themes.length;
+                          }),
+                          onPrev: () => setState(() {
+                            _selectedProfileIndex = (_selectedProfileIndex -
+                                    1 +
+                                    ProfileBackground.themes.length) %
+                                ProfileBackground.themes.length;
+                          }),
                         ),
                         const SizedBox(height: 20),
-
-                        // NAME
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
@@ -186,14 +192,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Shadow(
                                     color: Colors.black,
                                     blurRadius: 2,
-                                    offset: Offset(2, 2)),
+                                    offset: Offset(2, 2))
                               ],
                             ),
                           ),
                         ),
                         const SizedBox(height: 5),
-
-                        // TAGLINE
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
@@ -207,12 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
-                        // MENU BUTTONS
                         const HomeScreenButtons(),
                         const SizedBox(height: 15),
-
-                        // SOCIAL ICONS
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -227,8 +227,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 30),
-
-                        // SLIDE UP TO UNLOCK TEXT
                         if (!isSmallHeight) const SlideUpWidget(),
                       ],
                     ),
@@ -252,8 +250,8 @@ class SlideUpWidget extends StatefulWidget {
 
 class _SlideUpWidgetState extends State<SlideUpWidget>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacity;
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
 
   @override
   void initState() {
@@ -262,7 +260,11 @@ class _SlideUpWidgetState extends State<SlideUpWidget>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.3, end: 1.0).animate(_controller);
+
+    _opacity = Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
   }
 
   @override
@@ -283,7 +285,7 @@ class _SlideUpWidgetState extends State<SlideUpWidget>
             style: GoogleFonts.fredoka(
               fontSize: 18,
               fontWeight: FontWeight.w300,
-              color: Colors.white.withAlpha((0.9 * 255).toInt()),
+              color: Colors.white.withOpacity(0.9),
               letterSpacing: 1.2,
             ),
           ),
@@ -292,7 +294,7 @@ class _SlideUpWidgetState extends State<SlideUpWidget>
             "or press Space",
             style: GoogleFonts.fredoka(
               fontSize: 12,
-              color: Colors.white.withAlpha((0.38 * 255).toInt()),
+              color: Colors.white.withOpacity(0.38),
             ),
           ),
         ],
