@@ -1,62 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:battery_plus/battery_plus.dart';
-import 'dart:async';
 
 class RetroBatteryAge extends StatefulWidget {
-  final DateTime currentTime; // <- now we take time from RetroClock
-  const RetroBatteryAge({super.key, required this.currentTime});
+  final DateTime currentTime;
+
+  const RetroBatteryAge({
+    super.key,
+    required this.currentTime,
+  });
 
   @override
   State<RetroBatteryAge> createState() => _RetroBatteryAgeState();
 }
 
 class _RetroBatteryAgeState extends State<RetroBatteryAge> {
-  final Battery _battery = Battery();
-  int batteryLevel = 100;
-  BatteryState? batteryState;
-  StreamSubscription<BatteryState>? batterySubscription;
+  // 🎮 ENERGY SYSTEM
+  int getEnergyLevel() {
+    final now = widget.currentTime;
+    final hour = now.hour;
+    final minute = now.minute;
 
-  @override
-  void initState() {
-    super.initState();
-    _updateBattery();
-    batterySubscription =
-        _battery.onBatteryStateChanged.listen((BatteryState state) {
-      setState(() {
-        batteryState = state;
-      });
-      _updateBattery();
-    });
-  }
-
-  Future<void> _updateBattery() async {
-    try {
-      final level = await _battery.batteryLevel;
-      setState(() {
-        batteryLevel = level;
-      });
-    } catch (_) {
-      setState(() {
-        batteryLevel = 0;
-      });
+    // 🌅 5AM Reset Full
+    if (hour >= 5 && hour < 6) {
+      return 100;
     }
+
+    // ☀️ 6AM – 5PM gradual decrease
+    if (hour >= 6 && hour < 17) {
+      int totalMinutes = (hour - 6) * 60 + minute;
+      double percentDrop = (totalMinutes / (11 * 60)) * 70;
+      return (100 - percentDrop).clamp(30, 100).toInt();
+    }
+
+    // 🌆 5PM – 10PM stays low
+    if (hour >= 17 && hour < 22) {
+      return 30;
+    }
+
+    // 🌙 10PM – 5AM charging
+    if (hour >= 22 || hour < 5) {
+      int chargeHour = hour >= 22 ? hour - 22 : hour + 2;
+      double chargeProgress = (chargeHour * 60 + minute) / (7 * 60);
+      return (30 + (chargeProgress * 70)).clamp(30, 100).toInt();
+    }
+
+    return 100;
   }
 
-  @override
-  void dispose() {
-    batterySubscription?.cancel();
-    super.dispose();
+  bool isCharging() {
+    final hour = widget.currentTime.hour;
+    return hour >= 22 || hour < 5;
   }
 
+  // 🎂 AGE SYSTEM
   int getAge() {
-    final now = widget.currentTime; // <- use RetroClock time
+    final now = widget.currentTime;
     final birthDate = DateTime(2005, 4, 12);
+
     int age = now.year - birthDate.year;
+
     if (now.month < birthDate.month ||
         (now.month == birthDate.month && now.day < birthDate.day)) {
       age--;
     }
+
     return age;
   }
 
@@ -106,15 +113,18 @@ class _RetroBatteryAgeState extends State<RetroBatteryAge> {
               ),
               const SizedBox(width: 4),
               outlinedText(
-                "$batteryLevel%${batteryState == BatteryState.charging ? " ⚡" : ""}",
+                "${getEnergyLevel()}%${isCharging() ? " ⚡" : ""}",
                 fontSize,
-                const Color.fromARGB(255, 255, 255, 255),
+                Colors.white,
               ),
             ],
           ),
           const SizedBox(height: 4),
-          outlinedText("LIVES x ${getAge()}", fontSize,
-              const Color.fromARGB(255, 255, 255, 255)),
+          outlinedText(
+            "LIVES x ${getAge()}",
+            fontSize,
+            Colors.white,
+          ),
         ],
       ),
     );
