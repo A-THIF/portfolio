@@ -2,30 +2,28 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl =
-      "https://your-backend-url.com"; // Replace with your deployed FastAPI URL
+  static const String baseUrl = "https://portfolio-backend-bnhn.onrender.com";
 
-  static Future<bool> sendContact(String name, String profileLink) async {
-    final url = Uri.parse("$baseUrl/contact");
-
+  static Future<bool> sendContact(String username, String link) async {
     try {
       final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
+        Uri.parse('$baseUrl/contact'), // your endpoint
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          "name": name,
-          "profile_link": profileLink,
+          'username': username,
+          'link': link,
         }),
       );
 
       if (response.statusCode == 200) {
+        print("Contact sent successfully");
         return true;
       } else {
-        print("Error sending contact: ${response.body}");
+        print("Failed to send contact: ${response.body}");
         return false;
       }
     } catch (e) {
-      print("Exception sending contact: $e");
+      print("Error sending contact: $e");
       return false;
     }
   }
