@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio/widgets/clouds_widget.dart';
 import '../widgets/hills_background.dart';
+import '../services/api_service.dart';
 
 // Enum to manage Windows-style screen transitions
 enum LockState { input, provideDetails, incorrect }
@@ -19,7 +20,7 @@ class _LockScreenState extends State<LockScreen> {
   final TextEditingController _linkController = TextEditingController();
   LockState _currentState = LockState.input;
 
-  void _handleLogin() {
+  void _handleLogin() async {
     final user = _usernameController.text.trim();
     final link = _linkController.text.trim();
 
@@ -28,12 +29,17 @@ class _LockScreenState extends State<LockScreen> {
       return;
     }
 
-    // Windows-style validation (Example logic)
     bool isValid = link.contains("linkedin.com") || link.contains("github.com");
 
     if (isValid) {
-      debugPrint("Access Granted: $user");
-      // Navigate to your Dashboard/Home here
+      // Send to backend
+      bool success = await ApiService.sendContact(user, link);
+      if (success) {
+        debugPrint("Access Granted & Contact Sent: $user");
+        // Navigate to Home/Dashboard here
+      } else {
+        debugPrint("Access Granted but failed to send contact");
+      }
     } else {
       setState(() => _currentState = LockState.incorrect);
     }
