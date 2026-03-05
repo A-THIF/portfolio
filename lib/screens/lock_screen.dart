@@ -48,7 +48,7 @@ class _LockScreenState extends State<LockScreen> {
       if (response['role'] == 'admin') {
         Navigator.pushReplacementNamed(
           context,
-          '/admin-secret',
+          '/admin-dashboard',
           arguments: link, // This sends the text from your link controller
         );
         return;
@@ -67,7 +67,7 @@ class _LockScreenState extends State<LockScreen> {
       if (isMobileDevice || isSmallScreen) {
         Navigator.pushReplacementNamed(context, '/mobile-info');
       } else {
-        Navigator.pushReplacementNamed(context, '/game-world');
+        Navigator.pushReplacementNamed(context, '/game');
       }
     } else {
       setState(() => _currentState = LockState.incorrect);
