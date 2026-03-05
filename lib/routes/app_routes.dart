@@ -9,7 +9,7 @@ class AppRoutes {
   static const String lock = '/';
   static const String game = '/game';
   static const String mobileInfo = '/mobile-info';
-  static const String admin = '/admin-secret'; // Hidden route
+  static const String admin = '/admin-dashboard'; // Hidden route
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
