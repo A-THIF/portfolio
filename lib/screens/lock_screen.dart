@@ -6,6 +6,7 @@ import '../widgets/hills_background.dart';
 import '../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:html' as html; // Only works for Web
+import 'admin_dashboard.dart';
 
 // Enum to manage Windows-style screen transitions
 enum LockState { input, provideDetails, incorrect }
@@ -41,6 +42,17 @@ class _LockScreenState extends State<LockScreen> {
       // 2. Store the JWT Token for later use
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('jwt_token', response['access_token']);
+
+      // ADMIN CHECK: If the role returned is admin, go to the redirecter
+
+      if (response['role'] == 'admin') {
+        Navigator.pushReplacementNamed(
+          context,
+          '/admin-secret',
+          arguments: link, // This sends the text from your link controller
+        );
+        return;
+      }
 
       // 3. Detect Device & Navigate
       double width = MediaQuery.of(context).size.width;

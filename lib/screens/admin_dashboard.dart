@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AdminDashboardRedirect extends StatelessWidget {
-  const AdminDashboardRedirect({super.key});
+  final String
+      adminSecret; // This will hold the admin secret passed from the previous screen
+
+  const AdminDashboardRedirect({super.key, required this.adminSecret});
 
   @override
   Widget build(BuildContext context) {
     // Replace with your Render backend URL
-    final Uri adminUrl = Uri.parse('https://portfolio-backend-bnhn.onrender.com/admin-dashboard?token=nmohamedathif@12042005');
+    final Uri adminUrl = Uri.parse(
+        'https://portfolio-backend-bnhn.onrender.com/admin-dashboard?token=$adminSecret');
 
     // Open the URL automatically when this widget loads
     WidgetsBinding.instance.addPostFrameCallback((_) async {

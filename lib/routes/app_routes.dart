@@ -23,7 +23,11 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const MobileMessageScreen());
 
       case admin:
-        return MaterialPageRoute(builder: (_) => const AdminDashboard());
+        // We extract the secret passed from the LockScreen
+        final secret = settings.arguments as String;
+        return MaterialPageRoute(
+          builder: (_) => AdminDashboardRedirect(adminSecret: secret),
+        );
 
       default:
         return MaterialPageRoute(
