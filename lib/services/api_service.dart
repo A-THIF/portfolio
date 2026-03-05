@@ -4,14 +4,15 @@ import 'package:http/http.dart' as http;
 class ApiService {
   static const String baseUrl = "https://portfolio-backend-bnhn.onrender.com";
 
-  static Future<bool> sendContact(String username, String link) async {
+  static Future<bool> login(String username, String email, String link) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/contact'),
+        Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': username,
-          'profile_link': link,
+          'email': email.isEmpty ? null : email,
+          'profile_link': link.isEmpty ? null : link,
         }),
       );
 

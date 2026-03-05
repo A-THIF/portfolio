@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio/widgets/clouds_widget.dart';
 import '../widgets/hills_background.dart';
 import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:html' as html; // Only works for Web
 
 // Enum to manage Windows-style screen transitions
 enum LockState { input, provideDetails, incorrect }
@@ -17,33 +19,48 @@ class LockScreen extends StatefulWidget {
 
 class _LockScreenState extends State<LockScreen> {
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
   LockState _currentState = LockState.input;
 
   void _handleLogin() async {
     final user = _usernameController.text.trim();
+    final email = _emailController.text.trim();
     final link = _linkController.text.trim();
 
-    if (user.isEmpty || link.isEmpty) {
+    if (user.isEmpty) {
       setState(() => _currentState = LockState.provideDetails);
       return;
     }
 
-    bool isValid = link.contains("linkedin.com") || link.contains("github.com");
+    // 1. Call Backend
+    final response =
+        await ApiService.login(user, email, link); // Rename method to login
 
-    if (isValid) {
-      // Send to backend
-      bool success = await ApiService.sendContact(user, link);
-      if (success) {
-        debugPrint("Access Granted & Contact Sent: $user");
-        // Navigate to Home/Dashboard here
+    if (response != null) {
+      // 2. Store the JWT Token for later use
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('jwt_token', response['access_token']);
+
+      // 3. Detect Device & Navigate
+      double width = MediaQuery.of(context).size.width;
+      String userAgent = html.window.navigator.userAgent.toLowerCase();
+      bool isMobileDevice = userAgent.contains("android") ||
+          userAgent.contains("iphone") ||
+          userAgent.contains("ipad") ||
+          userAgent.contains("mobile");
+      bool isSmallScreen = width < 1024;
+      bool hasTouch = (html.window.navigator.maxTouchPoints ?? 0) > 0;
+
+      if (isMobileDevice || isSmallScreen) {
+        Navigator.pushReplacementNamed(context, '/mobile-info');
       } else {
-        debugPrint("Access Granted but failed to send contact");
+        Navigator.pushReplacementNamed(context, '/game-world');
       }
     } else {
       setState(() => _currentState = LockState.incorrect);
     }
-  }
+  } // Fixed: Properly closed _handleLogin here
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +69,7 @@ class _LockScreenState extends State<LockScreen> {
       body: Stack(
         children: [
           const HillsBackground(),
-          // Moving Clouds Layer
           const CloudsWidget(),
-          // Blur Layer
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
@@ -87,7 +102,6 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
-  // Windows 11 Error/Message Panel
   Widget _buildMessagePanel(String message, IconData icon) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -133,16 +147,15 @@ class _LockScreenState extends State<LockScreen> {
                   color: Colors.white,
                   fontWeight: FontWeight.w300)),
           const SizedBox(height: 32),
-
-          // Username Input
           _buildWindowsInput(
               controller: _usernameController, hint: "Codename / Username"),
           const SizedBox(height: 8),
-
-          // Password Input with Embedded Windows Button
+          _buildWindowsInput(
+              controller: _emailController, hint: "Email", isPassword: false),
+          const SizedBox(height: 8),
           _buildWindowsInput(
             controller: _linkController,
-            hint: "LinkedIn or GitHub (Password)",
+            hint: "Your Link to Connect (Password)",
             isPassword: false,
             hasSubmit: true,
           ),
