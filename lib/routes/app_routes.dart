@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/lock_screen.dart';
-import '../screens/game_screen.dart';
+import '../screens/game_update.dart';
 import '../screens/mobile_info_screen.dart';
 import '../screens/admin_dashboard.dart';
 
@@ -23,13 +23,14 @@ class AppRoutes {
         if (!isLoggedIn) {
           return MaterialPageRoute(builder: (_) => const LockScreen());
         }
-        return MaterialPageRoute(builder: (_) => const GameScreen());
+        return MaterialPageRoute(builder: (_) => const GameUpdate());
 
       case mobileInfo:
-        if (!isLoggedIn) {
-          return MaterialPageRoute(builder: (_) => const LockScreen());
-        }
-        return MaterialPageRoute(builder: (_) => const MobileMessageScreen());
+        final index = settings.arguments as int? ?? 0;
+
+        return MaterialPageRoute(
+          builder: (_) => MobileInfoScreen(selectedIndex: index),
+        );
 
       case admin:
         final secret = settings.arguments as String?;
