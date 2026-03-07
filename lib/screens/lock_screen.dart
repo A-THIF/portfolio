@@ -6,7 +6,7 @@ import '../widgets/hills_background.dart';
 import '../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:html' as html; // Only works for Web
-import 'admin_dashboard.dart';
+import '../routes/app_routes.dart';
 
 // Enum to manage Windows-style screen transitions
 enum LockState { input, provideDetails, incorrect }
@@ -40,6 +40,7 @@ class _LockScreenState extends State<LockScreen> {
 
     if (response != null) {
       // 2. Store the JWT Token for later use
+      AppRoutes.isLoggedIn = true; // Set the session flag to true
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('jwt_token', response['access_token']);
 
@@ -62,12 +63,15 @@ class _LockScreenState extends State<LockScreen> {
           userAgent.contains("ipad") ||
           userAgent.contains("mobile");
       bool isSmallScreen = width < 1024;
-      bool hasTouch = (html.window.navigator.maxTouchPoints ?? 0) > 0;
 
       if (isMobileDevice || isSmallScreen) {
         Navigator.pushReplacementNamed(context, '/mobile-info');
       } else {
-        Navigator.pushReplacementNamed(context, '/game');
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/game',
+          (route) => false,
+        );
       }
     } else {
       setState(() => _currentState = LockState.incorrect);

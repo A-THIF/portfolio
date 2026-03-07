@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/lock_screen.dart';
 import '../screens/game_screen.dart';
 import '../screens/mobile_info_screen.dart';
@@ -9,7 +8,11 @@ class AppRoutes {
   static const String lock = '/';
   static const String game = '/game';
   static const String mobileInfo = '/mobile-info';
-  static const String admin = '/admin-dashboard'; // Hidden route
+  static const String admin = '/admin-dashboard';
+
+  // 🔐 Temporary session flag
+  static bool isLoggedIn = false;
+  static String? adminSecret;
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -17,23 +20,30 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const LockScreen());
 
       case game:
+        if (!isLoggedIn) {
+          return MaterialPageRoute(builder: (_) => const LockScreen());
+        }
         return MaterialPageRoute(builder: (_) => const GameScreen());
 
       case mobileInfo:
+        if (!isLoggedIn) {
+          return MaterialPageRoute(builder: (_) => const LockScreen());
+        }
         return MaterialPageRoute(builder: (_) => const MobileMessageScreen());
 
       case admin:
-        // We extract the secret passed from the LockScreen
-        final secret = settings.arguments as String;
+        final secret = settings.arguments as String?;
+
+        if (secret == null || secret.isEmpty) {
+          return MaterialPageRoute(builder: (_) => const LockScreen());
+        }
+
         return MaterialPageRoute(
           builder: (_) => AdminDashboardRedirect(adminSecret: secret),
         );
-
       default:
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(child: Text('No route defined for ${settings.name}')),
-          ),
+          builder: (_) => const LockScreen(),
         );
     }
   }
