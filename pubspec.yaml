@@ -18,7 +18,7 @@ dependencies:
   intl: ^0.20.2
   http: ^1.2.0
   shared_preferences: ^2.3.5
-
+  audioplayers: ^6.6.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -81,3 +81,5 @@ flutter:
     - assets/profiles/avatar_2.png
     - assets/profiles/avatar_3.png
     - assets/profiles/original.png
+    - assets/audios/maro-jump-sound-effect_1.mp3
+    - assets/audios/sm64_mario_whoa.mp3

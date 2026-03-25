@@ -14,6 +14,7 @@ import '../widgets/clouds_widget.dart';
 import '../widgets/retro_clock.dart';
 import '../widgets/profile_background.dart';
 import '../services/api_service.dart';
+import '../widgets/sound_effects.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,6 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedProfileIndex = 0;
   int? _totalVisitors; // New state variable for total visitors
   bool _isNavigating = false;
+  double _dragOffset = 0.0;
+  double _maxDrag = 300; // how much needed to unlock
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -63,9 +67,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _navigateToLock() {
+  void _navigateToLock({bool isKey = false}) {
     if (_isNavigating) return;
     _isNavigating = true;
+
+    if (isKey) {
+      SoundEffects.playJump();
+    }
 
     Navigator.push(
       context,
@@ -89,6 +97,25 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) {
       _isNavigating = false;
       _focusNode.requestFocus();
+    });
+  }
+
+  void _resetDrag() {
+    setState(() {
+      _dragOffset = 0;
+    });
+  }
+
+  void _completeUnlock() {
+    setState(() {
+      _dragOffset = _maxDrag;
+    });
+
+    SoundEffects.playWhoa();
+
+    Future.delayed(const Duration(milliseconds: 200), () {
+      _navigateToLock(isKey: false);
+      _dragOffset = 0;
     });
   }
 
@@ -116,142 +143,174 @@ class _HomeScreenState extends State<HomeScreen> {
     return KeyboardListener(
       focusNode: _focusNode,
       onKeyEvent: (event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.space) {
-          _navigateToLock();
+        if (event is KeyDownEvent) {
+          _navigateToLock(isKey: true);
         }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF2666A6),
         body: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onPanEnd: (details) {
-            final velocityX = details.velocity.pixelsPerSecond.dx;
-            final velocityY = details.velocity.pixelsPerSecond.dy;
+          onPanStart: (_) {
+            _isDragging = true;
+          },
+          onPanUpdate: (details) {
+            setState(() {
+              _dragOffset -= details.delta.dy;
+              _dragOffset = _dragOffset.clamp(0.0, _maxDrag);
+            });
+          },
+          onPanEnd: (_) {
+            _isDragging = false;
 
-            // Slide UP to unlock
-            if (velocityY < -400) {
-              _navigateToLock();
-            }
-            // Horizontal Swipe to change profile
-            else if (velocityX > 400) {
-              setState(() {
-                _selectedProfileIndex = (_selectedProfileIndex -
-                        1 +
-                        ProfileBackground.themes.length) %
-                    ProfileBackground.themes.length;
-              });
-            } else if (velocityX < -400) {
-              setState(() {
-                _selectedProfileIndex = (_selectedProfileIndex + 1) %
-                    ProfileBackground.themes.length;
-              });
+            if (_dragOffset > _maxDrag * 0.4) {
+              // smoother trigger
+              _completeUnlock();
+            } else {
+              _resetDrag();
             }
           },
           child: Stack(
             children: [
-              ProfileBackground.getBackgroundWidget(_selectedProfileIndex),
-              const HillsBackground(),
-              const CloudsWidget(),
-              Positioned(
-                left: 20,
-                top: 90,
-                child: Transform.scale(
-                  scale: clockScale,
-                  alignment: Alignment.centerLeft,
-                  child: ValueListenableBuilder<DateTime>(
-                    valueListenable: _currentTime,
-                    builder: (_, time, __) => RetroClock(currentTime: time),
+              /// 🔥 LOCK SCREEN (background reveal)
+              IgnorePointer(
+                child: Opacity(
+                  opacity: Curves.easeOut.transform(
+                    (_dragOffset / _maxDrag).clamp(0.0, 1.0),
                   ),
+                  child: const LockScreen(),
                 ),
               ),
-              ValueListenableBuilder<DateTime>(
-                valueListenable: _currentTime,
-                builder: (_, time, __) => RetroBatteryAge(
-                  currentTime: time,
-                  visitorCount:
-                      _totalVisitors, // Pass visitor count to the widget
-                ),
-              ),
-              SafeArea(
-                child: Center(
-                  child: SingleChildScrollView(
-                    // Disable internal scrolling so the GestureDetector catches swipes
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: isSmallHeight ? 10 : 30,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        DynamicBackground(
-                          index: _selectedProfileIndex,
-                          onNext: () => setState(() {
-                            _selectedProfileIndex =
-                                (_selectedProfileIndex + 1) %
-                                    ProfileBackground.themes.length;
-                          }),
-                          onPrev: () => setState(() {
-                            _selectedProfileIndex = (_selectedProfileIndex -
-                                    1 +
-                                    ProfileBackground.themes.length) %
-                                ProfileBackground.themes.length;
-                          }),
+
+              /// 🔥 MAIN SCREEN (moves with drag)
+              Transform.translate(
+                offset: Offset(0, -_dragOffset),
+                child: Stack(
+                  children: [
+                    ProfileBackground.getBackgroundWidget(
+                        _selectedProfileIndex),
+                    const HillsBackground(),
+                    const CloudsWidget(),
+
+                    /// CLOCK
+                    Positioned(
+                      left: 20,
+                      top: 90,
+                      child: Transform.scale(
+                        scale: clockScale,
+                        alignment: Alignment.centerLeft,
+                        child: ValueListenableBuilder<DateTime>(
+                          valueListenable: _currentTime,
+                          builder: (_, time, __) =>
+                              RetroClock(currentTime: time),
                         ),
-                        const SizedBox(height: 20),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            PortfolioData.name,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.luckiestGuy(
-                              fontSize: 32,
-                              color: Colors.white,
-                              letterSpacing: 1.5,
-                              shadows: const [
-                                Shadow(
-                                    color: Colors.black,
-                                    blurRadius: 2,
-                                    offset: Offset(2, 2))
-                              ],
-                            ),
+                      ),
+                    ),
+
+                    /// BATTERY + SCORE
+                    ValueListenableBuilder<DateTime>(
+                      valueListenable: _currentTime,
+                      builder: (_, time, __) => RetroBatteryAge(
+                        currentTime: time,
+                        visitorCount: _totalVisitors ?? 0,
+                      ),
+                    ),
+
+                    /// MAIN CONTENT
+                    SafeArea(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: isSmallHeight ? 10 : 30,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              DynamicBackground(
+                                index: _selectedProfileIndex,
+                                onNext: () => setState(() {
+                                  _selectedProfileIndex =
+                                      (_selectedProfileIndex + 1) %
+                                          ProfileBackground.themes.length;
+                                }),
+                                onPrev: () => setState(() {
+                                  _selectedProfileIndex =
+                                      (_selectedProfileIndex -
+                                              1 +
+                                              ProfileBackground.themes.length) %
+                                          ProfileBackground.themes.length;
+                                }),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              /// NAME
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  PortfolioData.name,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.luckiestGuy(
+                                    fontSize: 32,
+                                    color: Colors.white,
+                                    letterSpacing: 1.5,
+                                    shadows: const [
+                                      Shadow(
+                                        color: Colors.black,
+                                        blurRadius: 2,
+                                        offset: Offset(2, 2),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 5),
+
+                              /// TAGLINE
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  PortfolioData.tagline,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.fredoka(
+                                    fontSize: 18,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.yellow[200],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+                              const HomeScreenButtons(),
+                              const SizedBox(height: 15),
+
+                              /// SOCIALS
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _socialIcon(FontAwesomeIcons.linkedin,
+                                      PortfolioData.linkedin),
+                                  const SizedBox(width: 25),
+                                  _socialIcon(FontAwesomeIcons.github,
+                                      PortfolioData.github),
+                                  const SizedBox(width: 25),
+                                  _socialIcon(FontAwesomeIcons.envelope,
+                                      PortfolioData.email),
+                                ],
+                              ),
+
+                              const SizedBox(height: 30),
+
+                              if (!isSmallHeight) const SlideUpWidget(),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            PortfolioData.tagline,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.fredoka(
-                              fontSize: 18,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.yellow[200],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const HomeScreenButtons(),
-                        const SizedBox(height: 15),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _socialIcon(FontAwesomeIcons.linkedin,
-                                PortfolioData.linkedin),
-                            const SizedBox(width: 25),
-                            _socialIcon(
-                                FontAwesomeIcons.github, PortfolioData.github),
-                            const SizedBox(width: 25),
-                            _socialIcon(
-                                FontAwesomeIcons.envelope, PortfolioData.email),
-                          ],
-                        ),
-                        const SizedBox(height: 30),
-                        if (!isSmallHeight) const SlideUpWidget(),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -302,7 +361,7 @@ class _SlideUpWidgetState extends State<SlideUpWidget>
         children: [
           const Icon(Icons.keyboard_arrow_up, color: Colors.white70, size: 30),
           Text(
-            "Slide up to unlock",
+            "Slide up for Gamified View",
             style: GoogleFonts.fredoka(
               fontSize: 18,
               fontWeight: FontWeight.w300,
@@ -312,7 +371,7 @@ class _SlideUpWidgetState extends State<SlideUpWidget>
           ),
           const SizedBox(height: 4),
           Text(
-            "or press Space",
+            "or press Any Key",
             style: GoogleFonts.fredoka(
               fontSize: 12,
               color: Colors.white.withOpacity(0.38),
