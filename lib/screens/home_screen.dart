@@ -13,6 +13,7 @@ import 'lock_screen.dart';
 import '../widgets/clouds_widget.dart';
 import '../widgets/retro_clock.dart';
 import '../widgets/profile_background.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,15 +28,31 @@ class _HomeScreenState extends State<HomeScreen> {
   final FocusNode _focusNode = FocusNode();
   late Timer _timer;
   int _selectedProfileIndex = 0;
+  int? _totalVisitors; // New state variable for total visitors
   bool _isNavigating = false;
 
   @override
   void initState() {
     super.initState();
     _focusNode.requestFocus();
+    _fetchVisitorStats(); // Fetch visitor stats on load
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       _currentTime.value = DateTime.now();
     });
+  }
+
+  Future<void> _fetchVisitorStats() async {
+    try {
+      final stats = await ApiService.getAdminStats();
+      if (stats != null && stats.containsKey('counts')) {
+        // Summing the daily counts to get the total
+        final List<dynamic> counts = stats['counts'];
+        final total = counts.fold(0, (sum, item) => sum + (item as int));
+        if (mounted) setState(() => _totalVisitors = total);
+      }
+    } catch (e) {
+      debugPrint("Stats fetch failed: $e");
+    }
   }
 
   @override
@@ -150,7 +167,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               ValueListenableBuilder<DateTime>(
                 valueListenable: _currentTime,
-                builder: (_, time, __) => RetroBatteryAge(currentTime: time),
+                builder: (_, time, __) => RetroBatteryAge(
+                  currentTime: time,
+                  visitorCount:
+                      _totalVisitors, // Pass visitor count to the widget
+                ),
               ),
               SafeArea(
                 child: Center(

@@ -6,7 +6,8 @@ class ApiService {
   static const String baseUrl = "https://portfolio-backend-bnhn.onrender.com";
 
   // Modified login to return the Token map
-  static Future<Map<String, dynamic>?> login(String username, String email, String link) async {
+  static Future<Map<String, dynamic>?> login(
+      String username, String email, String link) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
@@ -48,5 +49,36 @@ class ApiService {
     } catch (e) {
       return null;
     }
+  }
+
+// C:\Users\parve\Documents\Projects\portfolio\lib\services\api_service.dart
+
+  static Future<int?> getTotalVisitors() async {
+    final prefs = await SharedPreferences.getInstance();
+    // IMPORTANT: For your admin stats, you used a query token in the backend
+    // but your Flutter app uses JWT. Make sure your backend /admin/stats
+    // allows the JWT token or use your ADMIN_SECRET_KEY.
+    final token = prefs.getString('jwt_token');
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/admin/stats'), // Or a new endpoint like /admin/total
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        // Logic: Sum the counts array if the backend only sends daily stats
+        List<dynamic> counts = data['counts'] ?? [];
+        int total = counts.fold(0, (sum, item) => sum + (item as int));
+        return total;
+      }
+    } catch (e) {
+      print("Error fetching visitors: $e");
+    }
+    return null;
   }
 }

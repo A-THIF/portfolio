@@ -3,10 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 class RetroBatteryAge extends StatefulWidget {
   final DateTime currentTime;
+  final int? visitorCount; // Optional visitor count for future use
 
   const RetroBatteryAge({
     super.key,
     required this.currentTime,
+    this.visitorCount,
   });
 
   @override
@@ -97,6 +99,8 @@ class _RetroBatteryAgeState extends State<RetroBatteryAge> {
     final isSmallWidth = screenWidth < 400;
     final double fontSize = isSmallWidth ? 8 : 12;
 
+    final int score = widget.visitorCount ?? 0; // ✅ fallback here
+
     return Positioned(
       top: 50,
       right: 20,
@@ -124,6 +128,21 @@ class _RetroBatteryAgeState extends State<RetroBatteryAge> {
             "LIVES x ${getAge()}",
             fontSize,
             Colors.white,
+          ),
+          const SizedBox(height: 8),
+
+          // ✅ ALWAYS SHOW SCORE
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.star, color: Colors.yellow, size: 16),
+              const SizedBox(width: 4),
+              outlinedText(
+                "TOTAL VISITORS ${score.toString().padLeft(5, '0')}",
+                fontSize * 0.9,
+                Colors.yellowAccent,
+              ),
+            ],
           ),
         ],
       ),
