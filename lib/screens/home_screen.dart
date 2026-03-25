@@ -36,12 +36,11 @@ class _HomeScreenState extends State<HomeScreen>
   int _selectedProfileIndex = 0;
   int? _totalVisitors;
   bool _isNavigating = false;
-  final double _maxDrag = 300.0;
+  bool _isUnlocked = false;
 
   @override
   void initState() {
     super.initState();
-    _focusNode.requestFocus();
     _fetchVisitorStats();
 
     _dragController = AnimationController(
@@ -52,6 +51,14 @@ class _HomeScreenState extends State<HomeScreen>
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       _currentTime.value = DateTime.now();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_focusNode.hasFocus) {
+      FocusScope.of(context).requestFocus(_focusNode);
+    }
   }
 
   @override
@@ -76,51 +83,70 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _completeUnlock() {
-    if (_isNavigating) return;
+  void _completeUnlock({bool isKey = false}) {
+    if (_isUnlocked) return; // already unlocked
 
-    _dragController.animateTo(1.0).then((_) {
+    if (isKey) {
+      SoundEffects.playJump();
+    } else {
       SoundEffects.playWhoa();
-      _navigateToLock(isKey: false);
+    }
+
+    setState(() {
+      _isUnlocked = true;
+    });
+
+    _dragController.animateTo(
+      1.0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _lockBack() {
+    if (!_isUnlocked) return;
+
+    SoundEffects.playWhoa(); // optional reverse sound
+
+    _dragController.animateBack(
+      0.0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+
+    setState(() {
+      _isUnlocked = false;
     });
   }
 
-  void _resetDrag() {
-    _dragController.animateBack(0.0);
-  }
-
-  void _navigateToLock({bool isKey = false}) {
-    if (_isNavigating) return;
-    _isNavigating = true;
-
+  Future<void> _navigateToLock({bool isKey = false}) async {
     if (isKey) SoundEffects.playJump();
 
-    Navigator.push(
+    await Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const LockScreen(),
         transitionDuration: const Duration(milliseconds: 500),
-        transitionsBuilder: (_, animation, __, child) {
-          final curve =
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-          return FadeTransition(
-            opacity: curve,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.2),
-                end: Offset.zero,
-              ).animate(curve),
-              child: child,
-            ),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (_, animation, secondaryAnimation) => const LockScreen(),
+        transitionsBuilder: (_, animation, secondaryAnimation, child) {
+          final offsetAnimation =
+              Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                  .chain(CurveTween(curve: Curves.easeInOutCubic))
+                  .animate(animation);
+          final fadeAnimation =
+              Tween<double>(begin: 0.0, end: 1.0).animate(animation);
+          return SlideTransition(
+            position: offsetAnimation,
+            child: FadeTransition(opacity: fadeAnimation, child: child),
           );
         },
       ),
-    ).then((_) {
-      _isNavigating = false;
-      _dragController.animateTo(0.0,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-      _focusNode.requestFocus();
-    });
+    );
+  }
+
+  void _resetDrag() {
+    _dragController.animateBack(0.0,
+        duration: const Duration(milliseconds: 200));
   }
 
   Widget _socialIcon(IconData icon, String url) {
@@ -140,186 +166,197 @@ class _HomeScreenState extends State<HomeScreen>
     final size = MediaQuery.of(context).size;
     final isSmallHeight = size.height < 500;
 
-    // Layout Calculations
+    return WillPopScope(
+        onWillPop: () async {
+          if (_isUnlocked) {
+            _lockBack();
+            return false; // prevent pop
+          }
+          return true; // allow pop
+        },
+        child: KeyboardListener(
+          focusNode: _focusNode,
+          onKeyEvent: (event) {
+            if (event is KeyDownEvent) {
+              if (_isUnlocked) {
+                _lockBack(); // press key → go back
+              } else {
+                _completeUnlock(isKey: true);
+              }
+            }
+          },
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            body: Stack(
+              children: [
+                // 🔥 BACKGROUND SCREEN (LockScreen)
+                const LockScreen(),
+
+                // 🔥 FOREGROUND (your current HomeScreen UI)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragUpdate: (details) {
+                    final screenHeight = MediaQuery.of(context).size.height;
+                    _dragController.value -=
+                        details.primaryDelta! / screenHeight;
+                  },
+                  onVerticalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0.0;
+
+                    if (velocity < -500 || _dragController.value > 0.3) {
+                      _completeUnlock();
+                    } else if (velocity > 500 || _dragController.value < 0.7) {
+                      _lockBack();
+                    } else {
+                      _dragController.animateBack(
+                        0.0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutBack,
+                      );
+                    }
+                  },
+                  child: AnimatedBuilder(
+                    animation: _dragController,
+                    builder: (context, child) {
+                      final screenHeight = MediaQuery.of(context).size.height;
+
+                      // 👇 ADD THIS
+                      final scale = 1 - (_dragController.value * 0.03);
+
+                      return Transform.translate(
+                        offset:
+                            Offset(0, -_dragController.value * screenHeight),
+                        child: Transform.scale(
+                          scale: scale,
+                          child: _buildHomeContent(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ));
+  }
+
+  Widget _buildHomeContent() {
+    final size = MediaQuery.of(context).size;
+    final isSmallHeight = size.height < 500;
     final profileWidth = (size.height * 0.22).clamp(80.0, 120.0);
     final leftSpace = (size.width / 2) - profileWidth / 2 - 40;
     final clockScale = leftSpace < 80 ? (leftSpace / 80) : 1.0;
 
-    return KeyboardListener(
-      focusNode: _focusNode,
-      onKeyEvent: (event) {
-        if (event is KeyDownEvent) _navigateToLock(isKey: true);
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF2666A6),
-        body: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: (details) {
-            _dragController.value =
-                (_dragController.value - details.primaryDelta! / _maxDrag)
-                    .clamp(0.0, 1.0);
-            if (_dragController.value >= 0.85) {
-              _completeUnlock();
-            }
-          },
-          onVerticalDragEnd: (details) {
-            if (details.primaryVelocity! < -400 ||
-                _dragController.value > 0.4) {
-              _completeUnlock();
-            } else {
-              _resetDrag();
-            }
-          },
-          child: AnimatedBuilder(
-            animation: _dragController,
-            builder: (context, child) {
-              final dragValue = _dragController.value.clamp(0.0, 1.0);
-              final currentOffset = dragValue * _maxDrag;
+    return Stack(
+      children: [
+        ProfileBackground.getBackgroundWidget(_selectedProfileIndex),
+        const HillsBackground(),
+        const CloudsWidget(),
 
-              return Stack(
-                children: [
-                  // LOCK SCREEN (Revealed behind)
-                  IgnorePointer(
-                    child: Opacity(
-                      opacity: Curves.easeOut.transform(dragValue),
-                      child: const LockScreen(),
-                    ),
-                  ),
-
-                  // MAIN CONTENT (Slides up)
-                  Transform.translate(
-                    offset: Offset(0, -currentOffset),
-                    child: Stack(
-                      children: [
-                        ProfileBackground.getBackgroundWidget(
-                            _selectedProfileIndex),
-                        const HillsBackground(),
-                        const CloudsWidget(),
-
-                        // Clock
-                        Positioned(
-                          left: 20,
-                          top: 90,
-                          child: Transform.scale(
-                            scale: clockScale,
-                            alignment: Alignment.centerLeft,
-                            child: ValueListenableBuilder<DateTime>(
-                              valueListenable: _currentTime,
-                              builder: (_, time, __) =>
-                                  RetroClock(currentTime: time),
-                            ),
-                          ),
-                        ),
-
-                        // Battery & Score
-                        ValueListenableBuilder<DateTime>(
-                          valueListenable: _currentTime,
-                          builder: (_, time, __) => RetroBatteryAge(
-                            currentTime: time,
-                            visitorCount: _totalVisitors ?? 0,
-                          ),
-                        ),
-
-                        // Main UI Column
-                        SafeArea(
-                          child: Center(
-                            child: SingleChildScrollView(
-                              physics: const NeverScrollableScrollPhysics(),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: isSmallHeight ? 10 : 30,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  DynamicBackground(
-                                    index: _selectedProfileIndex,
-                                    onNext: () => setState(() {
-                                      _selectedProfileIndex =
-                                          (_selectedProfileIndex + 1) %
-                                              ProfileBackground.themes.length;
-                                    }),
-                                    onPrev: () => setState(() {
-                                      _selectedProfileIndex =
-                                          (_selectedProfileIndex -
-                                                  1 +
-                                                  ProfileBackground
-                                                      .themes.length) %
-                                              ProfileBackground.themes.length;
-                                    }),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildNameSection(),
-                                  const SizedBox(height: 5),
-                                  _buildTaglineSection(),
-                                  const SizedBox(height: 20),
-                                  const HomeScreenButtons(),
-                                  const SizedBox(height: 15),
-                                  _buildSocialsRow(),
-                                  const SizedBox(height: 30),
-                                  if (!isSmallHeight) const SlideUpWidget(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+        // Clock
+        Positioned(
+          left: 20,
+          top: 90,
+          child: Transform.scale(
+            scale: clockScale,
+            alignment: Alignment.centerLeft,
+            child: ValueListenableBuilder<DateTime>(
+              valueListenable: _currentTime,
+              builder: (_, time, __) => RetroClock(currentTime: time),
+            ),
           ),
         ),
-      ),
-    );
-  }
 
-  Widget _buildNameSection() {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(
-        PortfolioData.name,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.luckiestGuy(
-          fontSize: 32,
-          color: Colors.white,
-          letterSpacing: 1.5,
-          shadows: const [
-            Shadow(color: Colors.black, blurRadius: 2, offset: Offset(2, 2))
-          ],
+        // Battery & Visitors
+        ValueListenableBuilder<DateTime>(
+          valueListenable: _currentTime,
+          builder: (_, time, __) => RetroBatteryAge(
+            currentTime: time,
+            visitorCount: _totalVisitors ?? 0,
+          ),
         ),
-      ),
-    );
-  }
 
-  Widget _buildTaglineSection() {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(
-        PortfolioData.tagline,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.fredoka(
-          fontSize: 18,
-          fontStyle: FontStyle.italic,
-          color: Colors.yellow[200],
+        // Main UI
+        SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.symmetric(
+                  horizontal: 20, vertical: isSmallHeight ? 10 : 30),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DynamicBackground(
+                    index: _selectedProfileIndex,
+                    onNext: () => setState(() {
+                      _selectedProfileIndex = (_selectedProfileIndex + 1) %
+                          ProfileBackground.themes.length;
+                    }),
+                    onPrev: () => setState(() {
+                      _selectedProfileIndex = (_selectedProfileIndex -
+                              1 +
+                              ProfileBackground.themes.length) %
+                          ProfileBackground.themes.length;
+                    }),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildNameSection(),
+                  const SizedBox(height: 5),
+                  _buildTaglineSection(),
+                  const SizedBox(height: 20),
+                  const HomeScreenButtons(),
+                  const SizedBox(height: 15),
+                  _buildSocialsRow(),
+                  const SizedBox(height: 30),
+                  if (!isSmallHeight) const SlideUpWidget(),
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSocialsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _socialIcon(FontAwesomeIcons.linkedin, PortfolioData.linkedin),
-        const SizedBox(width: 25),
-        _socialIcon(FontAwesomeIcons.github, PortfolioData.github),
-        const SizedBox(width: 25),
-        _socialIcon(FontAwesomeIcons.envelope, PortfolioData.email),
       ],
     );
   }
+
+  Widget _buildNameSection() => FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          PortfolioData.name,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 32,
+            color: Colors.white,
+            letterSpacing: 1.5,
+            shadows: const [
+              Shadow(color: Colors.black, blurRadius: 2, offset: Offset(2, 2))
+            ],
+          ),
+        ),
+      );
+
+  Widget _buildTaglineSection() => FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          PortfolioData.tagline,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.fredoka(
+            fontSize: 18,
+            fontStyle: FontStyle.italic,
+            color: Colors.yellow[200],
+          ),
+        ),
+      );
+
+  Widget _buildSocialsRow() => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _socialIcon(FontAwesomeIcons.linkedin, PortfolioData.linkedin),
+          const SizedBox(width: 25),
+          _socialIcon(FontAwesomeIcons.github, PortfolioData.github),
+          const SizedBox(width: 25),
+          _socialIcon(FontAwesomeIcons.envelope, PortfolioData.email),
+        ],
+      );
 }
 
 class SlideUpWidget extends StatefulWidget {
