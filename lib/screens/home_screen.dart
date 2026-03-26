@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   int _selectedProfileIndex = 0;
   int? _totalVisitors;
-  bool _isNavigating = false;
+  final bool _isNavigating = false;
   bool _isUnlocked = false;
 
   @override
@@ -103,10 +103,12 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _lockBack() {
+  void _lockBack({bool playSound = false}) {
     if (!_isUnlocked) return;
 
-    SoundEffects.playWhoa(); // optional reverse sound
+    if (playSound) {
+      SoundEffects.playWhoa(); // optional reverse sound
+    }
 
     _dragController.animateBack(
       0.0,
@@ -178,10 +180,12 @@ class _HomeScreenState extends State<HomeScreen>
           focusNode: _focusNode,
           onKeyEvent: (event) {
             if (event is KeyDownEvent) {
-              if (_isUnlocked) {
-                _lockBack(); // press key → go back
-              } else {
-                _completeUnlock(isKey: true);
+              // Check specifically for Space Key
+              if (event.logicalKey == LogicalKeyboardKey.space) {
+                if (!_isUnlocked) {
+                  _completeUnlock(isKey: true);
+                }
+                // Removed the _lockBack() call here so Space only slides UP
               }
             }
           },
@@ -206,7 +210,9 @@ class _HomeScreenState extends State<HomeScreen>
                     if (velocity < -500 || _dragController.value > 0.3) {
                       _completeUnlock();
                     } else if (velocity > 500 || _dragController.value < 0.7) {
-                      _lockBack();
+                      _lockBack(
+                          playSound:
+                              false); // Explicitly turn off sound for drag
                     } else {
                       _dragController.animateBack(
                         0.0,
