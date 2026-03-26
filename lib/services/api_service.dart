@@ -53,31 +53,18 @@ class ApiService {
 
 // C:\Users\parve\Documents\Projects\portfolio\lib\services\api_service.dart
 
-  static Future<int?> getTotalVisitors() async {
-    final prefs = await SharedPreferences.getInstance();
-    // IMPORTANT: For your admin stats, you used a query token in the backend
-    // but your Flutter app uses JWT. Make sure your backend /admin/stats
-    // allows the JWT token or use your ADMIN_SECRET_KEY.
-    final token = prefs.getString('jwt_token');
-
+  static Future<int?> getPublicVisitors() async {
     try {
       final response = await http.get(
-        Uri.parse(
-            '$baseUrl/admin/stats'), // Or a new endpoint like /admin/total
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        Uri.parse('$baseUrl/public/stats'),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Logic: Sum the counts array if the backend only sends daily stats
-        List<dynamic> counts = data['counts'] ?? [];
-        int total = counts.fold(0, (sum, item) => sum + (item as int));
-        return total;
+        return data['total_visitors'];
       }
     } catch (e) {
-      print("Error fetching visitors: $e");
+      print("Public stats error: $e");
     }
     return null;
   }

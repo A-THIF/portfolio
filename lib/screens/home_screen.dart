@@ -72,22 +72,17 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _fetchVisitorStats() async {
     try {
-      final stats = await ApiService.getAdminStats();
-      if (stats != null && stats.containsKey('counts')) {
-        final List<dynamic> counts = stats['counts'];
+      final total = await ApiService.getPublicVisitors();
 
-        // Use num and toInt() to be safe across different environments
-        final total = counts.fold(0, (sum, item) {
-          final value = num.tryParse(item.toString()) ?? 0;
-          return sum + value.toInt();
-        });
-
-        if (mounted) setState(() => _totalVisitors = total);
+      if (mounted) {
+        setState(() => _totalVisitors = total ?? 0);
       }
     } catch (e) {
       debugPrint("Stats fetch failed: $e");
-      // Optionally set a fallback so it doesn't just stay null
-      if (mounted) setState(() => _totalVisitors = 0);
+
+      if (mounted) {
+        setState(() => _totalVisitors = 0);
+      }
     }
   }
 
