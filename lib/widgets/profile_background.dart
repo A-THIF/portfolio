@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sound_effects.dart';
 
 int _currentThemeIndex = 0;
 
@@ -85,6 +86,17 @@ class DynamicBackground extends StatefulWidget {
 class _DynamicBackgroundState extends State<DynamicBackground> {
   bool _canSwipe = true;
 
+  // Internal wrappers to trigger sound + logic
+  void _handleNext() {
+    SoundEffects.playOneUp();
+    widget.onNext();
+  }
+
+  void _handlePrev() {
+    SoundEffects.playOneUp();
+    widget.onPrev();
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -101,7 +113,7 @@ class _DynamicBackgroundState extends State<DynamicBackground> {
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
           icon: const Icon(Icons.chevron_left, color: Colors.yellow, size: 36),
-          onPressed: widget.onPrev,
+          onPressed: _handlePrev,
         ),
 
         const SizedBox(width: 8),
@@ -112,10 +124,10 @@ class _DynamicBackgroundState extends State<DynamicBackground> {
             onHorizontalDragUpdate: (details) {
               if (!_canSwipe) return;
               if (details.delta.dx > 10) {
-                widget.onPrev();
+                _handlePrev();
                 _canSwipe = false;
               } else if (details.delta.dx < -10) {
-                widget.onNext();
+                _handleNext();
                 _canSwipe = false;
               }
             },
@@ -160,7 +172,7 @@ class _DynamicBackgroundState extends State<DynamicBackground> {
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
           icon: const Icon(Icons.chevron_right, color: Colors.yellow, size: 36),
-          onPressed: widget.onNext,
+          onPressed: _handleNext,
         ),
       ],
     );
