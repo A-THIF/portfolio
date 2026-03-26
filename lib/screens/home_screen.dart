@@ -75,11 +75,19 @@ class _HomeScreenState extends State<HomeScreen>
       final stats = await ApiService.getAdminStats();
       if (stats != null && stats.containsKey('counts')) {
         final List<dynamic> counts = stats['counts'];
-        final total = counts.fold(0, (sum, item) => sum + (item as int));
+
+        // Use num and toInt() to be safe across different environments
+        final total = counts.fold(0, (sum, item) {
+          final value = num.tryParse(item.toString()) ?? 0;
+          return sum + value.toInt();
+        });
+
         if (mounted) setState(() => _totalVisitors = total);
       }
     } catch (e) {
       debugPrint("Stats fetch failed: $e");
+      // Optionally set a fallback so it doesn't just stay null
+      if (mounted) setState(() => _totalVisitors = 0);
     }
   }
 
@@ -168,84 +176,82 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isSmallHeight = size.height < 500;
 
-    return WillPopScope(
-        onWillPop: () async {
-          if (_isUnlocked) {
-            _lockBack();
-            return false; // prevent pop
-          }
-          return true; // allow pop
-        },
-        child: KeyboardListener(
-          focusNode: _focusNode,
-          onKeyEvent: (event) {
-            if (event is KeyDownEvent) {
-              // Check specifically for Space Key
-              if (event.logicalKey == LogicalKeyboardKey.space) {
-                if (!_isUnlocked) {
-                  _completeUnlock(isKey: true);
-                }
-                // Removed the _lockBack() call here so Space only slides UP
+    return PopScope(
+      canPop: !_isUnlocked, // Allow pop only if locked
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_isUnlocked) {
+          _lockBack();
+        }
+      },
+      child: KeyboardListener(
+        focusNode: _focusNode,
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.space) {
+              if (!_isUnlocked) {
+                _completeUnlock(isKey: true);
               }
             }
-          },
-          child: Scaffold(
-            backgroundColor: Colors.black,
-            body: Stack(
-              children: [
-                // 🔥 BACKGROUND SCREEN (LockScreen)
-                const LockScreen(),
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
+              // 1. BACKGROUND LAYER: Always active
+              const LockScreen(),
 
-                // 🔥 FOREGROUND (your current HomeScreen UI)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onVerticalDragUpdate: (details) {
-                    final screenHeight = MediaQuery.of(context).size.height;
-                    _dragController.value -=
-                        details.primaryDelta! / screenHeight;
-                  },
-                  onVerticalDragEnd: (details) {
-                    final velocity = details.primaryVelocity ?? 0.0;
+              // 2. FOREGROUND LAYER: Sliding Home Screen
+              AnimatedBuilder(
+                animation: _dragController,
+                builder: (context, child) {
+                  final screenHeight = MediaQuery.of(context).size.height;
+                  final scale = 1 - (_dragController.value * 0.03);
 
-                    if (velocity < -500 || _dragController.value > 0.3) {
-                      _completeUnlock();
-                    } else if (velocity > 500 || _dragController.value < 0.7) {
-                      _lockBack(
-                          playSound:
-                              false); // Explicitly turn off sound for drag
-                    } else {
-                      _dragController.animateBack(
-                        0.0,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutBack,
-                      );
-                    }
-                  },
-                  child: AnimatedBuilder(
-                    animation: _dragController,
-                    builder: (context, child) {
-                      final screenHeight = MediaQuery.of(context).size.height;
-
-                      // 👇 ADD THIS
-                      final scale = 1 - (_dragController.value * 0.03);
-
-                      return Transform.translate(
-                        offset:
-                            Offset(0, -_dragController.value * screenHeight),
-                        child: Transform.scale(
-                          scale: scale,
+                  return Transform.translate(
+                    offset: Offset(0, -_dragController.value * screenHeight),
+                    child: Transform.scale(
+                      scale: scale,
+                      // 🔥 THE FIX: Ignore touches when the screen has slid up
+                      // (e.g., more than 80% of the way)
+                      child: IgnorePointer(
+                        ignoring: _dragController.value > 0.8,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onVerticalDragUpdate: (details) {
+                            _dragController.value -=
+                                details.primaryDelta! / screenHeight;
+                          },
+                          onVerticalDragEnd: (details) {
+                            final velocity = details.primaryVelocity ?? 0.0;
+                            if (velocity < -500 ||
+                                _dragController.value > 0.3) {
+                              _completeUnlock();
+                            } else if (velocity > 500 ||
+                                _dragController.value < 0.7) {
+                              _lockBack(playSound: false);
+                            } else {
+                              _dragController.animateBack(
+                                0.0,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutBack,
+                              );
+                            }
+                          },
                           child: _buildHomeContent(),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-        ));
+        ),
+      ),
+    );
   }
 
   Widget _buildHomeContent() {
