@@ -44,6 +44,33 @@ class SoundEffects {
     }
   }
 
+  static Future<void> playFireball() async {
+    try {
+      final player = AudioPlayer(); // 🔥 new instance
+      await player.play(AssetSource('audios/mario-fireball.mp3'));
+    } catch (e) {
+      debugPrint("Error playing fireball: $e");
+    }
+  }
+
+  static Future<void> playCoin() async {
+    try {
+      await _player.stop();
+      await _player.play(AssetSource('audios/mario-coin-sound-effect.mp3'));
+    } catch (e) {
+      debugPrint("Error playing coin: $e");
+    }
+  }
+
+  static Future<void> playSuperMarioBros() async {
+    try {
+      await _player.stop();
+      await _player.play(AssetSource('audios/super-mario-bros.mp3'));
+    } catch (e) {
+      debugPrint("Error playing Super Mario Bros: $e");
+    }
+  }
+
   // If you want to reset it (e.g., when the app restarts or a specific event happens)
   static void resetOneUp() {
     _hasPlayedOneUp = false;

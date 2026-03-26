@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class LoadingScreenOpening extends StatefulWidget {
   final VoidCallback onLoadingComplete;
@@ -15,7 +17,8 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
 
   int progress = 0;
 
-  final List<String> _assets = [
+  // 🖼 ALL IMAGES
+  final List<String> _imageAssets = [
     'assets/images/sky.png',
     'assets/images/clouds.png',
     'assets/images/grass_floor.png',
@@ -24,48 +27,91 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
     'assets/images/hill_1.png',
     'assets/images/hill_2.png',
     'assets/images/mushroom.png',
+    'assets/images/loading_logo.png',
     'assets/profiles/avatar_1.png',
     'assets/profiles/avatar_2.png',
     'assets/profiles/avatar_3.png',
     'assets/profiles/original.png',
   ];
 
+  // 🔊 ALL AUDIO
+  final List<String> _audioAssets = [
+    'audios/maro-jump-sound-effect_1.mp3',
+    'audios/sm64_mario_whoa.mp3',
+    'audios/mario-1-up.mp3',
+    'audios/super-mario-bros.mp3',
+    'audios/mario-fireball.mp3',
+    'audios/mario-coin-sound-effect.mp3',
+  ];
+
   @override
   void initState() {
     super.initState();
 
-    // 🔁 Logo rotation animation
     _rotationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
 
-    // Wait until widget is fully built before preloading
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startPreloading();
     });
   }
 
   Future<void> _startPreloading() async {
+    int totalTasks = _imageAssets.length + _audioAssets.length + 3; // + fonts
     int loaded = 0;
 
-    for (String path in _assets) {
-      try {
-        await precacheImage(AssetImage(path), context);
-      } catch (e) {
-        debugPrint("Failed to load $path");
-      }
-
-      loaded++;
-
+    void updateProgress() {
       if (mounted) {
         setState(() {
-          progress = ((loaded / _assets.length) * 100).toInt();
+          progress = ((loaded / totalTasks) * 100).toInt();
         });
       }
-
-      await Future.delayed(const Duration(milliseconds: 100));
     }
+
+    // 🖼 1. Preload Images
+    for (String path in _imageAssets) {
+      try {
+        await precacheImage(AssetImage(path), context);
+      } catch (_) {
+        debugPrint("❌ Failed image: $path");
+      }
+      loaded++;
+      updateProgress();
+    }
+
+    // 🔊 2. Preload Audio (warm-up)
+    for (String path in _audioAssets) {
+      try {
+        final player = AudioPlayer();
+        await player.setSource(AssetSource(path)); // 🔥 preload only
+      } catch (_) {
+        debugPrint("❌ Failed audio: $path");
+      }
+      loaded++;
+      updateProgress();
+    }
+
+    // 🔤 3. Warm-up Fonts (VERY IMPORTANT for first load lag)
+    try {
+      await GoogleFonts.luckiestGuy();
+      loaded++;
+      updateProgress();
+
+      await GoogleFonts.fredoka();
+      loaded++;
+      updateProgress();
+
+      await GoogleFonts.vt323();
+      loaded++;
+      updateProgress();
+    } catch (_) {
+      debugPrint("❌ Font preload failed");
+    }
+
+    // Small delay for smooth UX
+    await Future.delayed(const Duration(milliseconds: 300));
 
     widget.onLoadingComplete();
   }
@@ -84,18 +130,14 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 🔄 Rotating Logo
             RotationTransition(
               turns: _rotationController,
               child: Image.asset(
-                'assets/images/loading_logo.png', // your logo path
+                'assets/images/loading_logo.png',
                 width: 80,
               ),
             ),
-
             const SizedBox(height: 40),
-
-            // 📊 Percentage Text
             Text(
               "$progress%",
               style: const TextStyle(
@@ -104,10 +146,7 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // 📈 Progress Bar
             SizedBox(
               width: 200,
               child: LinearProgressIndicator(

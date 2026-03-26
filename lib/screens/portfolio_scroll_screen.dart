@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../widgets/clouds_widget.dart';
 import '../widgets/game_card.dart';
 import '../data/portfolio_data.dart';
+import '../widgets/sound_effects.dart';
 
 class PortfolioScrollPage extends StatefulWidget {
   final String? initialSection;
@@ -30,6 +31,7 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
 
   @override
   bool get wantKeepAlive => true;
+  String _activeSection = "ABOUT";
 
   @override
   void initState() {
@@ -584,11 +586,30 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
           runSpacing: 10,
           children: [
             _navButton("HOME", () => Navigator.pop(context)),
-            _navButton("ABOUT", () => _scrollToSection(_aboutKey)),
-            _navButton("EXP", () => _scrollToSection(_expKey)),
-            _navButton("PROJECTS", () => _scrollToSection(_projectsKey)),
-            _navButton("SKILLS", () => _scrollToSection(_skillsKey)),
-            _navButton("CONNECT", () => _scrollToSection(_connectKey)),
+            _navButton("ABOUT", () {
+              setState(() => _activeSection = "ABOUT"); // 🔥 ADD THIS
+              _scrollToSection(_aboutKey);
+            }),
+            _navButton("EXP", () {
+              setState(() => _activeSection = "EXP");
+              _scrollToSection(_expKey);
+            }),
+            _navButton("PROJECTS", () {
+              setState(() => _activeSection = "PROJECTS");
+              _scrollToSection(_projectsKey);
+            }),
+            _navButton("SKILLS", () {
+              setState(() => _activeSection = "SKILLS");
+              _scrollToSection(_skillsKey);
+            }),
+            _navButton("LEADERSHIP", () {
+              setState(() => _activeSection = "LEADERSHIP");
+              _scrollToSection(_leadershipKey);
+            }),
+            _navButton("CONNECT", () {
+              setState(() => _activeSection = "CONNECT");
+              _scrollToSection(_connectKey);
+            }),
           ],
         ),
       ),
@@ -596,15 +617,20 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
   }
 
   Widget _navButton(String text, VoidCallback onTap) {
+    final bool isActive = _activeSection == text;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () async {
+          await SoundEffects.playCoin();
+          onTap();
+        },
         child: Text(
           text,
           style: GoogleFonts.vt323(
-            color: Colors.yellow,
-            fontSize: 22,
+            color: isActive ? Colors.white : Colors.yellow, // 🔥 highlight
+            fontSize: isActive ? 26 : 22, // optional size boost
             fontWeight: FontWeight.bold,
           ),
         ),

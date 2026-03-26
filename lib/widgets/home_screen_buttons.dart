@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart'; // 🚀 Added this
 import '../data/portfolio_data.dart';
 import '../screens/portfolio_scroll_screen.dart';
+import '../widgets/sound_effects.dart';
 
 class HomeScreenButtons extends StatelessWidget {
   final VoidCallback? onResumePressed;
@@ -53,12 +54,13 @@ class HomeScreenButtons extends StatelessWidget {
           "PORTFOLIO",
           buttonWidth,
           buttonHeight,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PortfolioScrollPage()),
-            );
-          },
+          () async {
+  await SoundEffects.playFireball(); // 🔥 ADD THIS
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const PortfolioScrollPage()),
+  );
+}
         ),
         _buildButton(
           context,
@@ -67,7 +69,10 @@ class HomeScreenButtons extends StatelessWidget {
           buttonWidth,
           buttonHeight,
           // 🔥 Directly calling the link handler here
-          () => _handleResumeClick(context),
+          () async {
+  await SoundEffects.playFireball(); // 🔥 ADD THIS
+  _handleResumeClick(context);
+}
         ),
       ],
     );

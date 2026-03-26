@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'sound_effects.dart';
 
-int _currentThemeIndex = 0;
-
 class ProfileBackground {
   static final List<Map<String, dynamic>> themes = [
     {
@@ -12,7 +10,7 @@ class ProfileBackground {
     },
     {
       'image': 'assets/profiles/avatar_1.png',
-      'bg': 'assets/images/sky.png', // image background
+      'bg': 'assets/images/sky.png',
       'isImageBg': true,
     },
     {
@@ -38,20 +36,13 @@ class ProfileBackground {
     },
   ];
 
-  // --- Method to get current profile image ---
-  static String getProfileImage(int index) {
-    return themes[index]['image'];
-  }
+  static String getProfileImage(int index) => themes[index]['image'];
 
-  // --- Method to get background widget ---
   static Widget getBackgroundWidget(int index) {
     final theme = themes[index];
     if (theme['isImageBg'] == true) {
       return Positioned.fill(
-        child: Image.asset(
-          theme['bg'], // image path
-          fit: BoxFit.cover,
-        ),
+        child: Image.asset(theme['bg'], fit: BoxFit.cover),
       );
     } else if (theme['bg'] is LinearGradient) {
       return Positioned.fill(
@@ -61,9 +52,8 @@ class ProfileBackground {
       return Positioned.fill(
         child: Container(color: theme['bg']),
       );
-    } else {
-      return const SizedBox.shrink();
     }
+    return const SizedBox.shrink();
   }
 }
 
@@ -83,24 +73,86 @@ class DynamicBackground extends StatefulWidget {
   State<DynamicBackground> createState() => _DynamicBackgroundState();
 }
 
-class _DynamicBackgroundState extends State<DynamicBackground> {
+class _DynamicBackgroundState extends State<DynamicBackground>
+    with SingleTickerProviderStateMixin {
   bool _canSwipe = true;
+  bool _hasPlayedEffect = false;
+  late AnimationController _effectController;
+  late Animation<int> _colorIndex;
 
-  // Internal wrappers to trigger sound + logic
+  // Mario "Star Power" LED sequence
+  final List<Color> _starColors = [
+    const Color(0xFFE52521), // Mario Red
+    const Color(0xFF049CD8), // Mario Blue
+    const Color(0xFF43B047), // Mario Green
+    Colors.white, // Flash White
+    const Color(0xFFFBD000), // Star Yellow
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _effectController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    // This makes the colors cycle 4 times (20 changes) in 1 second
+    _colorIndex = IntTween(begin: 0, end: (_starColors.length - 1)).animate(
+      CurvedAnimation(parent: _effectController, curve: Curves.linear),
+    );
+  }
+
+  @override
+  void dispose() {
+    _effectController.dispose();
+    super.dispose();
+  }
+
+  void _runStarEffect() {
+    if (_hasPlayedEffect) return; // 🚫 Stop if already played
+
+    _hasPlayedEffect = true; // ✅ Mark as played
+    _effectController.forward(from: 0.0);
+  }
+
   void _handleNext() {
     SoundEffects.playOneUp();
+    _runStarEffect();
     widget.onNext();
   }
 
   void _handlePrev() {
     SoundEffects.playOneUp();
+    _runStarEffect();
     widget.onPrev();
+  }
+
+  void _triggerNext() {
+    if (!_canSwipe) return;
+
+    _canSwipe = false;
+    _handleNext();
+
+    Future.delayed(const Duration(milliseconds: 400), () {
+      _canSwipe = true;
+    });
+  }
+
+  void _triggerPrev() {
+    if (!_canSwipe) return;
+
+    _canSwipe = false;
+    _handlePrev();
+
+    Future.delayed(const Duration(milliseconds: 400), () {
+      _canSwipe = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    // We calculate a responsive width, but use Flexible to ensure it never overflows
     final double profileSize = (size.height * 0.2).clamp(70.0, 110.0);
     final theme = ProfileBackground.themes[widget.index];
 
@@ -108,71 +160,74 @@ class _DynamicBackgroundState extends State<DynamicBackground> {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Left Arrow
         IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: const Icon(Icons.chevron_left, color: Colors.yellow, size: 36),
-          onPressed: _handlePrev,
+          icon: const Icon(Icons.chevron_left,
+              color: Color(0xFFFBD000), size: 36),
+          onPressed: _triggerPrev,
         ),
-
         const SizedBox(width: 8),
-
-        // Profile Circle - Wrapped in Flexible to prevent overflow
         Flexible(
           child: GestureDetector(
-            onHorizontalDragUpdate: (details) {
+            onHorizontalDragEnd: (details) {
               if (!_canSwipe) return;
-              if (details.delta.dx > 10) {
-                _handlePrev();
-                _canSwipe = false;
-              } else if (details.delta.dx < -10) {
-                _handleNext();
-                _canSwipe = false;
+
+              // Detect swipe direction
+              if (details.primaryVelocity! < 0) {
+                // Swipe Left → Next
+                _triggerNext();
+              } else if (details.primaryVelocity! > 0) {
+                // Swipe Right → Prev
+                _triggerPrev();
               }
             },
-            onHorizontalDragEnd: (_) => _canSwipe = true,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return ScaleTransition(scale: animation, child: child);
-              },
-              child: Container(
-                key: ValueKey(widget.index),
-                width: profileSize,
-                height: profileSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.yellow, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    theme['image'],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.person, color: Colors.white),
+            child: AnimatedBuilder(
+              animation: _effectController,
+              builder: (context, child) {
+                final Color activeColor = _effectController.isAnimating
+                    ? _starColors[_colorIndex.value % _starColors.length]
+                    : const Color(0xFFFBD000);
+
+                return Container(
+                  width: profileSize,
+                  height: profileSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: activeColor, width: 3.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: activeColor.withOpacity(0.6),
+                        blurRadius: _effectController.isAnimating ? 15 : 8,
+                        spreadRadius: _effectController.isAnimating ? 3 : 0,
+                      ),
+                    ],
                   ),
-                ),
-              ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(3.0),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (c, a) =>
+                          ScaleTransition(scale: a, child: c),
+                      child: ClipOval(
+                        key: ValueKey(widget.index),
+                        child: Image.asset(
+                          theme['image'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.person, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
-
         const SizedBox(width: 8),
-
-        // Right Arrow
         IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: const Icon(Icons.chevron_right, color: Colors.yellow, size: 36),
-          onPressed: _handleNext,
+          icon: const Icon(Icons.chevron_right,
+              color: Color(0xFFFBD000), size: 36),
+          onPressed: _triggerNext,
         ),
       ],
     );

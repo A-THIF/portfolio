@@ -19,6 +19,9 @@ dependencies:
   http: ^1.2.0
   shared_preferences: ^2.3.5
   audioplayers: ^6.6.0
+  flutter_riverpod: ^3.3.1
+
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -84,3 +87,6 @@ flutter:
     - assets/audios/maro-jump-sound-effect_1.mp3
     - assets/audios/sm64_mario_whoa.mp3
     - assets/audios/mario-1-up.mp3
+    - assets/audios/super-mario-bros.mp3   
+    - assets/audios/mario-fireball.mp3
+    - assets/audios/mario-coin-sound-effect.mp3

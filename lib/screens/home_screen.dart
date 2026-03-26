@@ -154,6 +154,8 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _socialIcon(IconData icon, String url) {
     return GestureDetector(
       onTap: () async {
+        await SoundEffects.playCoin(); // 🪙 ADD THIS
+
         final Uri uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
