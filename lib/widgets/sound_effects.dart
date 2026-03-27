@@ -9,12 +9,16 @@ class SoundEffects {
 
   static bool _hasPlayedOneUp = false;
 
+  // Dynamically check if the user is on a mobile web browser.
+  // If they switch to "Desktop Mode", this will return false!
   static bool get isMobileWeb =>
       kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.android);
 
   static Future<void> playJump() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     try {
       if (_jumpPlayer.state == PlayerState.playing) {
         await _jumpPlayer.stop();
@@ -27,6 +31,8 @@ class SoundEffects {
   }
 
   static Future<void> playWhoa() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     try {
       if (_whoaPlayer.state == PlayerState.playing) {
         await _whoaPlayer.stop();
@@ -38,6 +44,8 @@ class SoundEffects {
   }
 
   static Future<void> playCoin() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     try {
       if (_coinPlayer.state == PlayerState.playing) {
         await _coinPlayer.stop();
@@ -49,6 +57,8 @@ class SoundEffects {
   }
 
   static Future<void> playOneUp() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     if (!_hasPlayedOneUp) {
       try {
         _hasPlayedOneUp = true;
@@ -62,6 +72,8 @@ class SoundEffects {
   }
 
   static Future<void> playFireball() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     try {
       final player = AudioPlayer()..setReleaseMode(ReleaseMode.release);
       await player.play(AssetSource('audios/mario-fireball.mp3'));
@@ -71,6 +83,8 @@ class SoundEffects {
   }
 
   static Future<void> playSuperMarioBros() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     try {
       final player = AudioPlayer()..setReleaseMode(ReleaseMode.release);
       await player.play(AssetSource('audios/super-mario-bros.mp3'));
@@ -80,6 +94,8 @@ class SoundEffects {
   }
 
   static Future<void> playOpening() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     try {
       await _bgPlayer.setReleaseMode(ReleaseMode.stop);
       await _bgPlayer.setSource(AssetSource('audios/mario-opening.mp3'));
