@@ -1,89 +1,58 @@
-// C:\Users\parve\Documents\Projects\portfolio\lib\widgets\sound_effects.dart
-
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart'; // Added for debugPrint
+import 'package:flutter/foundation.dart';
 
 class SoundEffects {
-  static final AudioPlayer _player = AudioPlayer();
-  static bool _hasPlayedOneUp = false; // To track if 1-up has been played
+  static bool _hasPlayedOneUp = false;
+
+  // 🔥 CORE FIX: always create new player
+  static Future<void> _play(String path) async {
+    try {
+      final player = AudioPlayer();
+
+      await player.setReleaseMode(ReleaseMode.stop);
+      await player.play(AssetSource(path));
+
+      // 🔥 auto dispose after finish (important for mobile)
+      player.onPlayerComplete.listen((_) {
+        player.dispose();
+      });
+    } catch (e) {
+      debugPrint("Audio error ($path): $e");
+    }
+  }
 
   static Future<void> playJump() async {
-    try {
-      await _player.stop();
-      await _player.play(AssetSource('audios/maro-jump-sound-effect_1.mp3'));
-    } catch (e) {
-      debugPrint("Error playing jump: $e");
-    }
+    await _play('audios/maro-jump-sound-effect_1.mp3');
   }
 
   static Future<void> playWhoa() async {
-    try {
-      await _player.stop();
-      await _player.play(AssetSource('audios/sm64_mario_whoa.mp3'));
-    } catch (e) {
-      debugPrint("Error playing whoa: $e");
-    }
-  }
-
-  // 🍄 New 1-Up Sound for Profile Switch
-  static Future<void> playOneUp() async {
-    // 2. Only run if it HAS NOT played yet
-    if (!_hasPlayedOneUp) {
-      try {
-        _hasPlayedOneUp =
-            true; // 3. Set to true immediately so it can't trigger again
-
-        await _player.stop();
-        // Remember: No 'assets/' prefix here
-        await _player.play(AssetSource('audios/mario-1-up.mp3'));
-
-        debugPrint("Surprise! 1-Up played for the first and only time.");
-      } catch (e) {
-        debugPrint("Error playing 1-up: $e");
-      }
-    }
-  }
-
-  static Future<void> playFireball() async {
-    try {
-      final player = AudioPlayer(); // 🔥 new instance
-      await player.play(AssetSource('audios/mario-fireball.mp3'));
-    } catch (e) {
-      debugPrint("Error playing fireball: $e");
-    }
+    await _play('audios/sm64_mario_whoa.mp3');
   }
 
   static Future<void> playCoin() async {
-    try {
-      await _player.stop();
-      await _player.play(AssetSource('audios/mario-coin-sound-effect.mp3'));
-    } catch (e) {
-      debugPrint("Error playing coin: $e");
-    }
+    await _play('audios/mario-coin-sound-effect.mp3');
+  }
+
+  static Future<void> playFireball() async {
+    await _play('audios/mario-fireball.mp3');
   }
 
   static Future<void> playSuperMarioBros() async {
-    try {
-      await _player.stop();
-      await _player.play(AssetSource('audios/super-mario-bros.mp3'));
-    } catch (e) {
-      debugPrint("Error playing Super Mario Bros: $e");
-    }
+    await _play('audios/super-mario-bros.mp3');
   }
-
-  static final AudioPlayer _bgPlayer = AudioPlayer(); // separate player
 
   static Future<void> playOpening() async {
-    try {
-      await _bgPlayer.setReleaseMode(ReleaseMode.stop); // play once
-      await _bgPlayer.setSource(AssetSource('audios/mario-opening.mp3'));
-      await _bgPlayer.resume();
-    } catch (e) {
-      debugPrint("Error playing opening: $e");
-    }
+    await _play('audios/mario-opening.mp3');
   }
 
-  // If you want to reset it (e.g., when the app restarts or a specific event happens)
+  // 🍄 one-time sound
+  static Future<void> playOneUp() async {
+    if (_hasPlayedOneUp) return;
+
+    _hasPlayedOneUp = true;
+    await _play('audios/mario-1-up.mp3');
+  }
+
   static void resetOneUp() {
     _hasPlayedOneUp = false;
   }
