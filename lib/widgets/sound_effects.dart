@@ -2,55 +2,107 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
 class SoundEffects {
+  static final AudioPlayer _bgPlayer = AudioPlayer();
+  static final AudioPlayer _jumpPlayer = AudioPlayer();
+  static final AudioPlayer _whoaPlayer = AudioPlayer();
+  static final AudioPlayer _coinPlayer = AudioPlayer();
+
   static bool _hasPlayedOneUp = false;
 
-  // 🔥 CORE FIX: always create new player
-  static Future<void> _play(String path) async {
+  // Dynamically check if the user is on a mobile web browser.
+  // If they switch to "Desktop Mode", this will return false!
+  static bool get isMobileWeb =>
+      kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+
+  static Future<void> playJump() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
     try {
-      final player = AudioPlayer();
-
-      await player.setReleaseMode(ReleaseMode.stop);
-      await player.play(AssetSource(path));
-
-      // 🔥 auto dispose after finish (important for mobile)
-      player.onPlayerComplete.listen((_) {
-        player.dispose();
-      });
+      if (_jumpPlayer.state == PlayerState.playing) {
+        await _jumpPlayer.stop();
+      }
+      await _jumpPlayer
+          .play(AssetSource('audios/maro-jump-sound-effect_1.mp3'));
     } catch (e) {
-      debugPrint("Audio error ($path): $e");
+      debugPrint("Error playing jump: $e");
     }
   }
 
-  static Future<void> playJump() async {
-    await _play('audios/maro-jump-sound-effect_1.mp3');
-  }
-
   static Future<void> playWhoa() async {
-    await _play('audios/sm64_mario_whoa.mp3');
+    if (isMobileWeb) return; // Mute for mobile web
+
+    try {
+      if (_whoaPlayer.state == PlayerState.playing) {
+        await _whoaPlayer.stop();
+      }
+      await _whoaPlayer.play(AssetSource('audios/sm64_mario_whoa.mp3'));
+    } catch (e) {
+      debugPrint("Error playing whoa: $e");
+    }
   }
 
   static Future<void> playCoin() async {
-    await _play('audios/mario-coin-sound-effect.mp3');
+    if (isMobileWeb) return; // Mute for mobile web
+
+    try {
+      if (_coinPlayer.state == PlayerState.playing) {
+        await _coinPlayer.stop();
+      }
+      await _coinPlayer.play(AssetSource('audios/mario-coin-sound-effect.mp3'));
+    } catch (e) {
+      debugPrint("Error playing coin: $e");
+    }
+  }
+
+  static Future<void> playOneUp() async {
+    if (isMobileWeb) return; // Mute for mobile web
+
+    if (!_hasPlayedOneUp) {
+      try {
+        _hasPlayedOneUp = true;
+        final player = AudioPlayer()..setReleaseMode(ReleaseMode.release);
+        await player.play(AssetSource('audios/mario-1-up.mp3'));
+        debugPrint("Surprise! 1-Up played.");
+      } catch (e) {
+        debugPrint("Error playing 1-up: $e");
+      }
+    }
   }
 
   static Future<void> playFireball() async {
-    await _play('audios/mario-fireball.mp3');
+    if (isMobileWeb) return; // Mute for mobile web
+
+    try {
+      final player = AudioPlayer()..setReleaseMode(ReleaseMode.release);
+      await player.play(AssetSource('audios/mario-fireball.mp3'));
+    } catch (e) {
+      debugPrint("Error playing fireball: $e");
+    }
   }
 
   static Future<void> playSuperMarioBros() async {
-    await _play('audios/super-mario-bros.mp3');
+    if (isMobileWeb) return; // Mute for mobile web
+
+    try {
+      final player = AudioPlayer()..setReleaseMode(ReleaseMode.release);
+      await player.play(AssetSource('audios/super-mario-bros.mp3'));
+    } catch (e) {
+      debugPrint("Error playing Super Mario Bros: $e");
+    }
   }
 
   static Future<void> playOpening() async {
-    await _play('audios/mario-opening.mp3');
-  }
+    if (isMobileWeb) return; // Mute for mobile web
 
-  // 🍄 one-time sound
-  static Future<void> playOneUp() async {
-    if (_hasPlayedOneUp) return;
-
-    _hasPlayedOneUp = true;
-    await _play('audios/mario-1-up.mp3');
+    try {
+      await _bgPlayer.setReleaseMode(ReleaseMode.stop);
+      await _bgPlayer.setSource(AssetSource('audios/mario-opening.mp3'));
+      await _bgPlayer.resume();
+    } catch (e) {
+      debugPrint("Error playing opening: $e");
+    }
   }
 
   static void resetOneUp() {
