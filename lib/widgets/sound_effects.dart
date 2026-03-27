@@ -99,7 +99,7 @@ class SoundEffects {
     try {
       await _bgPlayer.setReleaseMode(ReleaseMode.stop);
       await _bgPlayer.setSource(AssetSource('audios/mario-opening.mp3'));
-      await _bgPlayer.resume();
+      await _bgPlayer.play(AssetSource('audios/mario-opening.mp3'));
     } catch (e) {
       debugPrint("Error playing opening: $e");
     }

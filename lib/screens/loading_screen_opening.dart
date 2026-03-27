@@ -16,14 +16,12 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
     with TickerProviderStateMixin {
   late AnimationController _rotationController;
   late AnimationController _transitionController;
-
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
 
   int progress = 0;
   bool _isFinished = false;
 
-  // 🖼 Assets
   final List<String> _imageAssets = [
     'assets/images/sky.png',
     'assets/images/clouds.png',
@@ -54,24 +52,27 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
   void initState() {
     super.initState();
 
-    // 🔄 Loading spinner
-    _rotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
+    _rotationController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat();
 
-    // 🎬 Transition animation (Windows style)
     _transitionController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
 
     _fadeAnimation = Tween<double>(begin: 1, end: 0).animate(
-      CurvedAnimation(parent: _transitionController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _transitionController,
+        curve: Curves.easeInOutCubic, // smoother than easeInOut
+      ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 1, end: 1.1).animate(
-      CurvedAnimation(parent: _transitionController, curve: Curves.easeOut),
+    _scaleAnimation = Tween<double>(begin: 1, end: 1.15).animate(
+      CurvedAnimation(
+        parent: _transitionController,
+        curve: Curves.easeOutCubic,
+      ),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,34 +84,48 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
     if (_isFinished) return;
     _isFinished = true;
 
-    // 🔊 IMPORTANT: works on mobile too
-    await SoundEffects.playOpening();
-
-    // 🎬 Start animation
     await Future.delayed(const Duration(milliseconds: 500));
     await _transitionController.forward();
+    widget.onLoadingComplete();
+  }
 
-    // 🚀 Navigate AFTER animation
+  Future<void> _triggerSoundAndNavigate() async {
+    if (!_isFinished) return;
+
+    // 🔊 Play sound
+    await SoundEffects.playOpening();
+
+    // 🎬 Start transition animation
+    await _transitionController.forward();
+
+    // 🚀 Navigate AFTER animation completes
     widget.onLoadingComplete();
   }
 
   Future<void> _startPreloading() async {
-    int totalTasks = _imageAssets.length + _audioAssets.length + 3;
+    final fontLoaders = [
+      GoogleFonts.luckiestGuy,
+      GoogleFonts.fredoka,
+      GoogleFonts.vt323
+    ];
+
+    int totalTasks = _imageAssets.length + fontLoaders.length; // + fonts
     int loaded = 0;
 
     void updateProgress() {
       if (!mounted) return;
-
+      final newProgress = ((loaded / totalTasks) * 100).toInt();
       setState(() {
-        progress = ((loaded / totalTasks) * 100).toInt();
+        progress = newProgress;
       });
-
-      if (progress >= 100) {
-        _onLoadingFinished();
+      if (newProgress >= 100) {
+        setState(() {
+          _isFinished = true;
+        });
       }
     }
 
-    // 🖼 Images
+    // 1️⃣ Preload images
     for (String path in _imageAssets) {
       try {
         await precacheImage(AssetImage(path), context);
@@ -119,31 +134,18 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
       updateProgress();
     }
 
-    // 🔊 Audio preload (IMPORTANT FIX)
-    for (String path in _audioAssets) {
+    // 3️⃣ Warm-up fonts
+    for (final fontLoader in [
+      GoogleFonts.luckiestGuy,
+      GoogleFonts.fredoka,
+      GoogleFonts.vt323
+    ]) {
       try {
-        final player = AudioPlayer();
-        await player.setReleaseMode(ReleaseMode.stop);
-        await player.setSource(AssetSource(path));
+        fontLoader();
       } catch (_) {}
       loaded++;
       updateProgress();
     }
-
-    // 🔤 Fonts
-    try {
-      GoogleFonts.luckiestGuy();
-      loaded++;
-      updateProgress();
-
-      GoogleFonts.fredoka();
-      loaded++;
-      updateProgress();
-
-      GoogleFonts.vt323();
-      loaded++;
-      updateProgress();
-    } catch (_) {}
   }
 
   @override
@@ -156,45 +158,62 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                RotationTransition(
-                  turns: _rotationController,
-                  child: Image.asset(
-                    'assets/images/loading_logo.png',
-                    width: 80,
+        backgroundColor: Colors.black,
+        body: GestureDetector(
+          onTap: _isFinished
+              ? _triggerSoundAndNavigate
+              : null, // Allow tap to skip
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Center(
+                  child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  RotationTransition(
+                    turns: _rotationController,
+                    child: Image.asset(
+                      'assets/images/loading_logo.png',
+                      width: 80,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                Text(
-                  "$progress%",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+
+                  const SizedBox(height: 40),
+
+                  Text(
+                    "$progress%",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: 200,
-                  child: LinearProgressIndicator(
-                    value: progress / 100,
-                    backgroundColor: Colors.grey[800],
-                    color: Colors.white,
+
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: 200,
+                    child: LinearProgressIndicator(
+                      value: progress / 100,
+                      backgroundColor: Colors.grey[800],
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-              ],
+
+                  // 👇 ADD HERE
+                  if (_isFinished)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
+                      child: Text(
+                        "Tap to Start",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                ],
+              )),
             ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
