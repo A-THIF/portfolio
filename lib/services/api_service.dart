@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   static const String baseUrl = "https://portfolio-backend-bnhn.onrender.com";
@@ -56,16 +57,19 @@ class ApiService {
   static Future<int?> getPublicVisitors() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/public/stats'),
+        Uri.parse('https://portfolio-backend-bnhn.onrender.com/public/stats'),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['total_visitors'];
+
+        return data['total_visitors']; // ✅ IMPORTANT CHANGE
+      } else {
+        return null;
       }
     } catch (e) {
-      print("Public stats error: $e");
+      debugPrint("API Error: $e");
+      return null;
     }
-    return null;
   }
 }

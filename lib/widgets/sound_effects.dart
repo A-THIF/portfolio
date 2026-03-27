@@ -71,6 +71,18 @@ class SoundEffects {
     }
   }
 
+  static final AudioPlayer _bgPlayer = AudioPlayer(); // separate player
+
+  static Future<void> playOpening() async {
+    try {
+      await _bgPlayer.setReleaseMode(ReleaseMode.stop); // play once
+      await _bgPlayer.setSource(AssetSource('audios/mario-opening.mp3'));
+      await _bgPlayer.resume();
+    } catch (e) {
+      debugPrint("Error playing opening: $e");
+    }
+  }
+
   // If you want to reset it (e.g., when the app restarts or a specific event happens)
   static void resetOneUp() {
     _hasPlayedOneUp = false;
