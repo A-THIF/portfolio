@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
 
 // Internal Imports
 import '../data/portfolio_data.dart';
@@ -16,6 +17,7 @@ import '../widgets/profile_background.dart';
 import '../services/api_service.dart';
 import '../widgets/sound_effects.dart';
 import '../widgets/retro_battery_age.dart';
+import '../routes/app_routes.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,8 +37,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   int _selectedProfileIndex = 0;
   int? _totalVisitors;
-  final bool _isNavigating = false;
   bool _isUnlocked = false;
+  bool _isNavigating = false; // prevent double-trigger
 
   @override
   void initState() {
@@ -53,12 +55,18 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
+  // ── REMOVED didChangeDependencies focus stealing ──
+  // The KeyboardListener only needs focus when this screen is active.
+  // We request focus only once after the first frame.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_focusNode.hasFocus) {
-      FocusScope.of(context).requestFocus(_focusNode);
-    }
+    // Only request focus if we are the top route (not covered by another screen)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      }
+    });
   }
 
   @override
@@ -73,21 +81,15 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _fetchVisitorStats() async {
     try {
       final total = await ApiService.getPublicVisitors();
-
-      if (mounted) {
-        setState(() => _totalVisitors = total ?? 0);
-      }
+      if (mounted) setState(() => _totalVisitors = total ?? 0);
     } catch (e) {
       debugPrint("Stats fetch failed: $e");
-
-      if (mounted) {
-        setState(() => _totalVisitors = 0);
-      }
+      if (mounted) setState(() => _totalVisitors = 0);
     }
   }
 
   void _completeUnlock({bool isKey = false}) {
-    if (_isUnlocked) return; // already unlocked
+    if (_isUnlocked || _isNavigating) return;
 
     if (isKey) {
       SoundEffects.playJump();
@@ -97,68 +99,70 @@ class _HomeScreenState extends State<HomeScreen>
 
     setState(() {
       _isUnlocked = true;
+      _isNavigating = true;
     });
 
-    _dragController.animateTo(
-      1.0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    _dragController
+        .animateTo(1.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut)
+        .then((_) async {
+      await _navigateAfterUnlock();
+      if (mounted) {
+        // Snap back instantly — no animation — so LockScreen bg is never seen
+        _dragController.value = 0.0;
+        setState(() {
+          _isUnlocked = false;
+          _isNavigating = false;
+        });
+        // Re-request focus for keyboard shortcuts
+        FocusScope.of(context).requestFocus(_focusNode);
+      }
+    });
   }
 
   void _lockBack({bool playSound = false}) {
     if (!_isUnlocked) return;
-
-    if (playSound) {
-      SoundEffects.playWhoa(); // optional reverse sound
-    }
-
-    _dragController.animateBack(
-      0.0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-
-    setState(() {
-      _isUnlocked = false;
-    });
-  }
-
-  Future<void> _navigateToLock({bool isKey = false}) async {
-    if (isKey) SoundEffects.playJump();
-
-    await Navigator.push(
-      context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 500),
-        reverseTransitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (_, animation, secondaryAnimation) => const LockScreen(),
-        transitionsBuilder: (_, animation, secondaryAnimation, child) {
-          final offsetAnimation =
-              Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                  .chain(CurveTween(curve: Curves.easeInOutCubic))
-                  .animate(animation);
-          final fadeAnimation =
-              Tween<double>(begin: 0.0, end: 1.0).animate(animation);
-          return SlideTransition(
-            position: offsetAnimation,
-            child: FadeTransition(opacity: fadeAnimation, child: child),
-          );
-        },
-      ),
-    );
-  }
-
-  void _resetDrag() {
+    if (playSound) SoundEffects.playWhoa();
     _dragController.animateBack(0.0,
-        duration: const Duration(milliseconds: 200));
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    setState(() => _isUnlocked = false);
+  }
+
+  Future<void> _navigateAfterUnlock() async {
+    if (AppRoutes.isLoggedIn) {
+      final width = MediaQuery.of(context).size.width;
+      final isMobile = defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+
+      if (isMobile || width < 1024) {
+        await Navigator.pushNamed(context, AppRoutes.mobileInfo, arguments: 0);
+      } else {
+        await Navigator.pushNamed(context, AppRoutes.game);
+      }
+    } else {
+      // Show lock screen as a full push — no slide animation from home needed
+      // because home content is already slid up out of view
+      await Navigator.push(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 350),
+          reverseTransitionDuration: const Duration(milliseconds: 1),
+          // ← instant reverse so you never see it slide back down
+          pageBuilder: (_, __, ___) => const LockScreen(),
+          transitionsBuilder: (_, animation, __, child) => FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+        ),
+      );
+    }
   }
 
   Widget _socialIcon(IconData icon, String url) {
     return GestureDetector(
       onTap: () async {
-        await SoundEffects.playCoin(); // 🪙 ADD THIS
-
+        await SoundEffects.playCoin();
         final Uri uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -170,24 +174,19 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return PopScope(
-      canPop: !_isUnlocked, // Allow pop only if locked
+      canPop: !_isUnlocked,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        if (_isUnlocked) {
-          _lockBack();
-        }
+        if (_isUnlocked) _lockBack();
       },
       child: KeyboardListener(
         focusNode: _focusNode,
         onKeyEvent: (event) {
-          if (event is KeyDownEvent) {
-            if (event.logicalKey == LogicalKeyboardKey.space) {
-              if (!_isUnlocked) {
-                _completeUnlock(isKey: true);
-              }
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.space) {
+            if (!_isUnlocked && !_isNavigating) {
+              _completeUnlock(isKey: true);
             }
           }
         },
@@ -195,10 +194,12 @@ class _HomeScreenState extends State<HomeScreen>
           backgroundColor: Colors.black,
           body: Stack(
             children: [
-              // 1. BACKGROUND LAYER: Always active
-              const LockScreen(),
+              // ── BACKGROUND: just a static blurred/dark layer, NOT LockScreen widget ──
+              // This prevents the double-LockScreen flash on back navigation.
+              // The real LockScreen is pushed as a separate route.
+              Container(color: Colors.black),
 
-              // 2. FOREGROUND LAYER: Sliding Home Screen
+              // ── FOREGROUND: Sliding Home Screen ──
               AnimatedBuilder(
                 animation: _dragController,
                 builder: (context, child) {
@@ -209,30 +210,23 @@ class _HomeScreenState extends State<HomeScreen>
                     offset: Offset(0, -_dragController.value * screenHeight),
                     child: Transform.scale(
                       scale: scale,
-                      // 🔥 THE FIX: Ignore touches when the screen has slid up
-                      // (e.g., more than 80% of the way)
                       child: IgnorePointer(
                         ignoring: _dragController.value > 0.8,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
+                            if (_isNavigating) return;
                             _dragController.value -=
                                 details.primaryDelta! / screenHeight;
                           },
                           onVerticalDragEnd: (details) {
+                            if (_isNavigating) return;
                             final velocity = details.primaryVelocity ?? 0.0;
                             if (velocity < -500 ||
                                 _dragController.value > 0.3) {
                               _completeUnlock();
-                            } else if (velocity > 500 ||
-                                _dragController.value < 0.7) {
-                              _lockBack(playSound: false);
                             } else {
-                              _dragController.animateBack(
-                                0.0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutBack,
-                              );
+                              _lockBack(playSound: false);
                             }
                           },
                           child: _buildHomeContent(),
@@ -261,8 +255,6 @@ class _HomeScreenState extends State<HomeScreen>
         ProfileBackground.getBackgroundWidget(_selectedProfileIndex),
         const HillsBackground(),
         const CloudsWidget(),
-
-        // Clock
         Positioned(
           left: 20,
           top: 90,
@@ -275,8 +267,6 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ),
-
-        // Battery & Visitors
         ValueListenableBuilder<DateTime>(
           valueListenable: _currentTime,
           builder: (_, time, __) => RetroBatteryAge(
@@ -284,8 +274,6 @@ class _HomeScreenState extends State<HomeScreen>
             visitorCount: _totalVisitors ?? 0,
           ),
         ),
-
-        // Main UI
         SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -368,6 +356,7 @@ class _HomeScreenState extends State<HomeScreen>
       );
 }
 
+// ── SlideUpWidget unchanged ──
 class SlideUpWidget extends StatefulWidget {
   const SlideUpWidget({super.key});
 

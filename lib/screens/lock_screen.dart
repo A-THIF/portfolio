@@ -1,18 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:portfolio/widgets/clouds_widget.dart';
-
 import '../widgets/hills_background.dart';
-
 import '../services/api_service.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:flutter/foundation.dart';
+import 'package:web/web.dart' as web;
 import '../routes/app_routes.dart';
 
 enum LockState { username, connections, provideDetails, incorrect }
@@ -32,8 +27,7 @@ class _LockScreenState extends State<LockScreen> {
 
   Future<String> _generateNpcName() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', true);
-    AppRoutes.isLoggedIn = true; // keep your existing flag too
+    await AppRoutes.setLoggedIn(); // ✅ Use AppRoutes here
 
     int count = prefs.getInt('npc_count') ?? 0;
     count++;
@@ -57,9 +51,15 @@ class _LockScreenState extends State<LockScreen> {
     final response = await ApiService.login(user, email, link);
 
     if (response != null) {
-      AppRoutes.isLoggedIn = true;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('jwt_token', response['access_token']);
+      await AppRoutes.setLoggedIn(
+          jwtToken: response['access_token']); // ✅ Updated
+
+      if (kIsWeb) {
+        web.window.sessionStorage['jwt_token'] = response['access_token'];
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('jwt_token', response['access_token']);
+      }
 
       if (response['role'] == 'admin') {
         Navigator.pushReplacementNamed(
@@ -165,7 +165,6 @@ class _LockScreenState extends State<LockScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Quirky icon area
           Center(
             child: Container(
               width: 80,
@@ -180,8 +179,6 @@ class _LockScreenState extends State<LockScreen> {
             ),
           ),
           const SizedBox(height: 20),
-
-          // Gamified headline
           Text(
             "PLAYER DETECTED",
             style: GoogleFonts.vt323(
@@ -210,8 +207,6 @@ class _LockScreenState extends State<LockScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Input field
           _buildGamifiedInput(
             controller: _usernameController,
             hint: "e.g. DarkMatter42, Priya, etc.",
@@ -219,23 +214,18 @@ class _LockScreenState extends State<LockScreen> {
             onSubmit: _handleUsernameNext,
           ),
           const SizedBox(height: 20),
-
-          // Action row
           Row(
             children: [
-              // NPC skip button
               _buildGhostButton(
                 label: "I'll be an NPC",
                 icon: Icons.smart_toy_outlined,
                 onTap: () async {
                   final npcName = await _generateNpcName();
                   _usernameController.text = npcName;
-
                   _handleUsernameNext();
                 },
               ),
               const Spacer(),
-              // Continue button
               _buildPrimaryButton(
                 label: "Continue",
                 icon: Icons.arrow_forward_rounded,
@@ -259,7 +249,6 @@ class _LockScreenState extends State<LockScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Back affordance + icon
           Row(
             children: [
               GestureDetector(
@@ -279,7 +268,6 @@ class _LockScreenState extends State<LockScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
           Text(
             "Want to\nlink up with me?",
             style: GoogleFonts.spaceGrotesk(
@@ -299,16 +287,12 @@ class _LockScreenState extends State<LockScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Email input
           _buildGamifiedInput(
             controller: _emailController,
             hint: "Your email (optional)",
             icon: Icons.alternate_email_rounded,
           ),
           const SizedBox(height: 10),
-
-          // Link input
           _buildGamifiedInput(
             controller: _linkController,
             hint: "A link — portfolio, LinkedIn, anything",
@@ -316,11 +300,8 @@ class _LockScreenState extends State<LockScreen> {
             onSubmit: _handleConnectionsNext,
           ),
           const SizedBox(height: 20),
-
-          // Action row
           Row(
             children: [
-              // Skip button
               _buildGhostButton(
                 label: "Nah, I'm good",
                 icon: Icons.close_rounded,

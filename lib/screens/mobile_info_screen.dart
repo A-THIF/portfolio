@@ -310,9 +310,7 @@ class _MobileInfoScreenState extends State<MobileInfoScreen>
   // ─────────────────────────────────────────
   //  NAVIGATION
   // ─────────────────────────────────────────
-  void _goHome() {
-    Navigator.pushReplacementNamed(context, '/home');
-  }
+  void _goHome() => Navigator.pop(context);
 
   // ─────────────────────────────────────────
   //  BUILD

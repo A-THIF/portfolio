@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/sound_effects.dart'; // ✅ IMPORT THIS
+import '../routes/app_routes.dart'; // ✅ IMPORT THIS
 
 class GameUpdate extends StatefulWidget {
   const GameUpdate({super.key});
@@ -73,13 +74,7 @@ class _GameUpdateState extends State<GameUpdate> {
             left: 20,
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/home',
-                  (route) => false,
-                );
-              },
+              onPressed: () => Navigator.pop(context),
             ),
           ),
 
