@@ -93,6 +93,32 @@ class SoundEffects {
     }
   }
 
+  static final AudioPlayer _bouncePlayer = AudioPlayer();
+  static Future<void> playBouncing() async {
+    if (isMobileWeb) return;
+
+    try {
+      if (_bouncePlayer.state == PlayerState.playing) {
+        await _bouncePlayer.stop();
+      }
+      await _bouncePlayer.play(AssetSource('audios/mario-bouncing.mp3'));
+    } catch (e) {
+      debugPrint("Error playing bouncing: $e");
+    }
+  }
+
+  static final AudioPlayer _clearedPlayer = AudioPlayer();
+  static Future<void> playCleared() async {
+    try {
+      if (_clearedPlayer.state == PlayerState.playing) {
+        await _clearedPlayer.stop();
+      }
+      await _clearedPlayer.play(AssetSource('audios/mario-cleared.mp3'));
+    } catch (e) {
+      debugPrint("Error playing cleared: $e");
+    }
+  }
+
   static Future<void> playOpening() async {
     if (isMobileWeb) return; // Mute for mobile web
 

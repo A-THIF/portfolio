@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/sound_effects.dart';
 
@@ -46,6 +45,8 @@ class _LoadingScreenOpeningState extends State<LoadingScreenOpening>
     'audios/mario-fireball.mp3',
     'audios/mario-coin-sound-effect.mp3',
     'audios/mario-opening.mp3',
+    'audios/mario-bouncing.mp3',
+    'audios/mario-cleared.mp3',
   ];
 
   @override

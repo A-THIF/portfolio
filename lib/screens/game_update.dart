@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/sound_effects.dart'; // ✅ IMPORT THIS
 
 class GameUpdate extends StatefulWidget {
   const GameUpdate({super.key});
@@ -17,7 +18,7 @@ class _GameUpdateState extends State<GameUpdate> {
   double dx = 2.5;
   double dy = 2.0;
 
-  final logoSize = 120;
+  final double logoSize = 80;
 
   Timer? timer;
 
@@ -26,10 +27,31 @@ class _GameUpdateState extends State<GameUpdate> {
     super.initState();
 
     timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      final size = MediaQuery.of(context).size;
+
+      bool bounced = false;
+
       setState(() {
         x += dx;
         y += dy;
+
+        // Horizontal bounce
+        if (x <= 0 || x + logoSize >= size.width) {
+          dx = -dx;
+          bounced = true;
+        }
+
+        // Vertical bounce
+        if (y <= 0 || y + logoSize >= size.height) {
+          dy = -dy;
+          bounced = true;
+        }
       });
+
+      // 🔊 Play sound ONLY when bounce happens
+      if (bounced) {
+        SoundEffects.playBouncing();
+      }
     });
   }
 
@@ -41,28 +63,33 @@ class _GameUpdateState extends State<GameUpdate> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
-    // Bounce logic
-    if (x <= 0 || x + logoSize >= size.width) {
-      dx = -dx;
-    }
-
-    if (y <= 0 || y + logoSize >= size.height) {
-      dy = -dy;
-    }
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
+          /// 🔙 BACK BUTTON
+          Positioned(
+            top: 40,
+            left: 20,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+            ),
+          ),
+
           /// DVD LOGO
           Positioned(
             left: x,
             top: y,
             child: Image.asset(
               "assets/images/loading_logo.png",
-              width: 80,
+              width: logoSize,
             ),
           ),
 

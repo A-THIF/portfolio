@@ -91,3 +91,5 @@ flutter:
     - assets/audios/mario-fireball.mp3
     - assets/audios/mario-coin-sound-effect.mp3
     - assets/audios/mario-opening.mp3
+    - assets/audios/mario-bouncing.mp3
+    - assets/audios/mario-cleared.mp3

@@ -12,8 +12,7 @@ import '../services/api_service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'dart:html' as html;
-
+import 'package:flutter/foundation.dart';
 import '../routes/app_routes.dart';
 
 enum LockState { username, connections, provideDetails, incorrect }
@@ -30,6 +29,19 @@ class _LockScreenState extends State<LockScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
   LockState _currentState = LockState.username;
+
+  Future<String> _generateNpcName() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', true);
+    AppRoutes.isLoggedIn = true; // keep your existing flag too
+
+    int count = prefs.getInt('npc_count') ?? 0;
+    count++;
+
+    await prefs.setInt('npc_count', count);
+
+    return "NPC_${count}_Guest";
+  }
 
   // Called after both screens are done (username + connections)
   void _handleLogin() async {
@@ -59,11 +71,8 @@ class _LockScreenState extends State<LockScreen> {
       }
 
       double width = MediaQuery.of(context).size.width;
-      String userAgent = html.window.navigator.userAgent.toLowerCase();
-      bool isMobileDevice = userAgent.contains("android") ||
-          userAgent.contains("iphone") ||
-          userAgent.contains("ipad") ||
-          userAgent.contains("mobile");
+      bool isMobileDevice = defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
       bool isSmallScreen = width < 1024;
 
       if (isMobileDevice || isSmallScreen) {
@@ -72,7 +81,7 @@ class _LockScreenState extends State<LockScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/game',
-          (route) => false,
+          ModalRoute.withName('/home'),
         );
       }
     } else {
@@ -119,7 +128,8 @@ class _LockScreenState extends State<LockScreen> {
                   position: Tween<Offset>(
                     begin: const Offset(0.08, 0),
                     end: Offset.zero,
-                  ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+                  ).animate(
+                      CurvedAnimation(parent: anim, curve: Curves.easeOut)),
                   child: child,
                 ),
               ),
@@ -217,8 +227,10 @@ class _LockScreenState extends State<LockScreen> {
               _buildGhostButton(
                 label: "I'll be an NPC",
                 icon: Icons.smart_toy_outlined,
-                onTap: () {
-                  _usernameController.clear();
+                onTap: () async {
+                  final npcName = await _generateNpcName();
+                  _usernameController.text = npcName;
+
                   _handleUsernameNext();
                 },
               ),
@@ -355,8 +367,8 @@ class _LockScreenState extends State<LockScreen> {
             child: TextField(
               controller: controller,
               onSubmitted: onSubmit != null ? (_) => onSubmit() : null,
-              style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white, fontSize: 14),
+              style:
+                  GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14),
               cursorColor: Colors.yellowAccent,
               decoration: InputDecoration(
                 hintText: hint,
@@ -441,14 +453,12 @@ class _LockScreenState extends State<LockScreen> {
         Icon(icon, color: Colors.white, size: 64),
         const SizedBox(height: 16),
         Text(message,
-            style: GoogleFonts.spaceGrotesk(
-                color: Colors.white, fontSize: 18)),
+            style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18)),
         const SizedBox(height: 24),
         SizedBox(
           width: 120,
           child: ElevatedButton(
-            onPressed: () =>
-                setState(() => _currentState = LockState.username),
+            onPressed: () => setState(() => _currentState = LockState.username),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white24,
               foregroundColor: Colors.white,

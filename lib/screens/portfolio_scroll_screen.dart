@@ -623,7 +623,7 @@ class _PortfolioScrollPageState extends State<PortfolioScrollPage>
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () async {
-          await SoundEffects.playCoin();
+          SoundEffects.playCoin();
           onTap();
         },
         child: Text(
