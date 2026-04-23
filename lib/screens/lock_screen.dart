@@ -62,10 +62,8 @@ class _LockScreenState extends State<LockScreen> {
       }
 
       if (response['role'] == 'admin') {
-        Navigator.pushReplacementNamed(
-          context,
-          '/admin-dashboard',
-        );
+        final url = "https://portfolio-backend-bnhn.onrender.com/admin-dashboard";
+        web.window.open(url, "_self");
         return;
       }
 
