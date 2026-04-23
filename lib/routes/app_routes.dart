@@ -60,13 +60,15 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const HomeScreen());
 
       case game:
-        if (!isLoggedIn)
+        if (!isLoggedIn) {
           return MaterialPageRoute(builder: (_) => const LockScreen());
+        }
         return MaterialPageRoute(builder: (_) => const GameUpdate());
 
       case mobileInfo:
-        if (!isLoggedIn)
+        if (!isLoggedIn) {
           return MaterialPageRoute(builder: (_) => const LockScreen());
+        }
         final index = settings.arguments as int? ?? 0;
         return MaterialPageRoute(
             builder: (_) => MobileInfoScreen(selectedIndex: index));

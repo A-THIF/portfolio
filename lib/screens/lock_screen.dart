@@ -65,7 +65,6 @@ class _LockScreenState extends State<LockScreen> {
         Navigator.pushReplacementNamed(
           context,
           '/admin-dashboard',
-          arguments: link,
         );
         return;
       }
