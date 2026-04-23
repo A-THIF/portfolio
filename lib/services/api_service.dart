@@ -30,16 +30,20 @@ class ApiService {
   }
 
   // NEW: Fetch Admin Stats using the Token
-  static Future<Map<String, dynamic>?> getAdminStats() async {
+  // lib/services/api_service.dart
+
+static Future<Map<String, dynamic>?> getAdminStats() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
 
+    if (token == null) return null;
+
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/admin/stats'), // Match this to your backend route
+        Uri.parse('$baseUrl/admin/stats'), 
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // This is how you "access" it
+          'Authorization': 'Bearer $token', // This tells the backend WHO you are
         },
       );
 
@@ -50,7 +54,7 @@ class ApiService {
     } catch (e) {
       return null;
     }
-  }
+}
 
 // C:\Users\parve\Documents\Projects\portfolio\lib\services\api_service.dart
 

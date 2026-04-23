@@ -39,52 +39,54 @@ class _LockScreenState extends State<LockScreen> {
 
   // Called after both screens are done (username + connections)
   void _handleLogin() async {
-    final user = _usernameController.text.trim();
-    final email = _emailController.text.trim();
-    final link = _linkController.text.trim();
+  final user = _usernameController.text.trim();
+  final email = _emailController.text.trim();
+  final link = _linkController.text.trim();
 
-    if (user.isEmpty) {
-      setState(() => _currentState = LockState.provideDetails);
-      return;
-    }
-
-    final response = await ApiService.login(user, email, link);
-
-    if (response != null) {
-      await AppRoutes.setLoggedIn(
-          jwtToken: response['access_token']); // ✅ Updated
-
-      if (kIsWeb) {
-        web.window.sessionStorage['jwt_token'] = response['access_token'];
-      } else {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwt_token', response['access_token']);
-      }
-
-      if (response['role'] == 'admin') {
-        final url = "https://portfolio-backend-bnhn.onrender.com/admin-dashboard";
-        web.window.open(url, "_self");
-        return;
-      }
-
-      double width = MediaQuery.of(context).size.width;
-      bool isMobileDevice = defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.android;
-      bool isSmallScreen = width < 1024;
-
-      if (isMobileDevice || isSmallScreen) {
-        Navigator.pushReplacementNamed(context, '/mobile-info');
-      } else {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/game',
-          ModalRoute.withName('/home'),
-        );
-      }
-    } else {
-      setState(() => _currentState = LockState.incorrect);
-    }
+  if (user.isEmpty) {
+    setState(() => _currentState = LockState.provideDetails);
+    return;
   }
+
+  final response = await ApiService.login(user, email, link);
+
+  if (response != null) {
+    final prefs = await SharedPreferences.getInstance(); // Initialize prefs
+    
+    // Save the token for API calls (like stats)
+    await prefs.setString('jwt_token', response['access_token']);
+    await AppRoutes.setLoggedIn(jwtToken: response['access_token']);
+
+    if (response['role'] == 'admin') {
+      if (kIsWeb) {
+        // Use the absolute URL to your backend
+        const String baseUrl = "https://portfolio-backend-bnhn.onrender.com";
+        web.window.location.assign("$baseUrl/admin-dashboard");
+      } else {
+        Navigator.pushReplacementNamed(context, '/admin-dashboard');
+      }
+      return; // Exit here for admins
+    }
+
+    // --- LOGIC FOR REGULAR VISITORS ---
+    double width = MediaQuery.of(context).size.width;
+    bool isMobileDevice = defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+    bool isSmallScreen = width < 1024;
+
+    if (isMobileDevice || isSmallScreen) {
+      Navigator.pushReplacementNamed(context, '/mobile-info');
+    } else {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/game',
+        ModalRoute.withName('/home'),
+      );
+    }
+  } else {
+    setState(() => _currentState = LockState.incorrect);
+  }
+}
 
   // From username screen: if user typed something, go to connections; if skip, login with empty
   void _handleUsernameNext() {
