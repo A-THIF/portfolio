@@ -4,7 +4,6 @@
 **Athif OS** is a Flutter-based "Interactive Desktop" that blurs the line between a professional portfolio and a retro video game. It’s built for the curious—those willing to "unlock" the system and explore a digital world.
 
 **🌐 Explorer Portal:** [athif-os.vercel.app](https://athif-os.vercel.app)  
-**📡 Command Center:** [portfolio-backend-bnhn.onrender.com](https://portfolio-backend-bnhn.onrender.com)
 
 ---
 
