@@ -39,54 +39,53 @@ class _LockScreenState extends State<LockScreen> {
 
   // Called after both screens are done (username + connections)
   void _handleLogin() async {
-  final user = _usernameController.text.trim();
-  final email = _emailController.text.trim();
-  final link = _linkController.text.trim();
+    final user = _usernameController.text.trim();
+    final email = _emailController.text.trim();
+    final link = _linkController.text.trim();
 
-  if (user.isEmpty) {
-    setState(() => _currentState = LockState.provideDetails);
-    return;
-  }
+    if (user.isEmpty) {
+      setState(() => _currentState = LockState.provideDetails);
+      return;
+    }
 
-  final response = await ApiService.login(user, email, link);
+    final response = await ApiService.login(user, email, link);
 
-  if (response != null) {
-    final prefs = await SharedPreferences.getInstance(); // Initialize prefs
-    
-    // Save the token for API calls (like stats)
-    await prefs.setString('jwt_token', response['access_token']);
-    await AppRoutes.setLoggedIn(jwtToken: response['access_token']);
+    if (response != null) {
+      final prefs = await SharedPreferences.getInstance(); // Initialize prefs
 
-    if (response['role'] == 'admin') {
-      if (kIsWeb) {
-        // Use the absolute URL to your backend
-        const String baseUrl = "https://portfolio-backend-bnhn.onrender.com";
-        web.window.location.assign("$baseUrl/admin-dashboard");
-      } else {
-        Navigator.pushReplacementNamed(context, '/admin-dashboard');
+      // Save the token for API calls (like stats)
+      await prefs.setString('jwt_token', response['access_token']);
+      await AppRoutes.setLoggedIn(jwtToken: response['access_token']);
+
+      if (response['role'] == 'admin') {
+        if (kIsWeb) {
+          final token = response['access_token'];
+          // Use fragment (#) — not sent to server, stays client-side
+          web.window.location.assign(
+              "https://portfolio-backend-bnhn.onrender.com/admin-dashboard#$token");
+        }
+        return; // Exit here for admins
       }
-      return; // Exit here for admins
-    }
 
-    // --- LOGIC FOR REGULAR VISITORS ---
-    double width = MediaQuery.of(context).size.width;
-    bool isMobileDevice = defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.android;
-    bool isSmallScreen = width < 1024;
+      // --- LOGIC FOR REGULAR VISITORS ---
+      double width = MediaQuery.of(context).size.width;
+      bool isMobileDevice = defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+      bool isSmallScreen = width < 1024;
 
-    if (isMobileDevice || isSmallScreen) {
-      Navigator.pushReplacementNamed(context, '/mobile-info');
+      if (isMobileDevice || isSmallScreen) {
+        Navigator.pushReplacementNamed(context, '/mobile-info');
+      } else {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/game',
+          ModalRoute.withName('/home'),
+        );
+      }
     } else {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/game',
-        ModalRoute.withName('/home'),
-      );
+      setState(() => _currentState = LockState.incorrect);
     }
-  } else {
-    setState(() => _currentState = LockState.incorrect);
   }
-}
 
   // From username screen: if user typed something, go to connections; if skip, login with empty
   void _handleUsernameNext() {
