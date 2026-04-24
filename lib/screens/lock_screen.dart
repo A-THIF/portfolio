@@ -51,20 +51,21 @@ class _LockScreenState extends State<LockScreen> {
     final response = await ApiService.login(user, email, link);
 
     if (response != null) {
-      final prefs = await SharedPreferences.getInstance(); // Initialize prefs
+      final String token = response['access_token'];
+      final String role = response['role'];
+
+      await AppRoutes.setLoggedIn(jwtToken: token); // Initialize prefs
+      final prefs = await SharedPreferences.getInstance();
 
       // Save the token for API calls (like stats)
       await prefs.setString('jwt_token', response['access_token']);
       await AppRoutes.setLoggedIn(jwtToken: response['access_token']);
 
-      if (response['role'] == 'admin') {
-        if (kIsWeb) {
-          final token = response['access_token'];
-          // Use fragment (#) — not sent to server, stays client-side
-          web.window.location.assign(
-              "https://portfolio-backend-bnhn.onrender.com/admin-dashboard#$token");
-        }
-        return; // Exit here for admins
+      if (role == 'admin') {
+        // Push the admin route and pass the ACCESS TOKEN
+        Navigator.pushReplacementNamed(context, AppRoutes.admin,
+            arguments: token);
+        return;
       }
 
       // --- LOGIC FOR REGULAR VISITORS ---

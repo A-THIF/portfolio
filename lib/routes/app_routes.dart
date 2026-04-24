@@ -73,13 +73,16 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => MobileInfoScreen(selectedIndex: index));
 
+      // lib/routes/app_routes.dart
+
       case admin:
-        final secret = settings.arguments as String?;
-        if (secret == null || secret.isEmpty) {
+        // Now we pass the JWT Access Token here
+        final token = settings.arguments as String?;
+        if (token == null || token.isEmpty) {
           return MaterialPageRoute(builder: (_) => const LockScreen());
         }
         return MaterialPageRoute(
-            builder: (_) => AdminDashboardRedirect(adminSecret: secret));
+            builder: (_) => AdminDashboardRedirect(jwtToken: token));
 
       case lock:
       default:

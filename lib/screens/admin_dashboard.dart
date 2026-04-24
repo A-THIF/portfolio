@@ -1,40 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:web/web.dart' as web;
 import 'package:url_launcher/url_launcher.dart';
 
 class AdminDashboardRedirect extends StatelessWidget {
   final String
-      adminSecret; // This will hold the admin secret passed from the previous screen
+      jwtToken; // Change name to reflect it's the JWT, not the raw secret
 
-  const AdminDashboardRedirect({super.key, required this.adminSecret});
+  const AdminDashboardRedirect({super.key, required this.jwtToken});
 
   @override
   Widget build(BuildContext context) {
-    // Replace with your Render backend URL
-    final Uri adminUrl = Uri.parse(
-        'https://portfolio-backend-bnhn.onrender.com/admin-dashboard?token=$adminSecret');
+    // 1. Prepare the high-security URL with Fragment (#)
+    final String dashboardUrl =
+        'https://portfolio-backend-bnhn.onrender.com/admin-dashboard#$jwtToken';
 
-    // Open the URL automatically when this widget loads
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (await canLaunchUrl(adminUrl)) {
-        await launchUrl(adminUrl);
+      if (kIsWeb) {
+        // For Web: Use the bridge we built (this keeps URLs clean)
+        web.window.location.assign(dashboardUrl);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch admin dashboard URL')),
-        );
+        // For Mobile: Use url_launcher
+        final Uri uri = Uri.parse(dashboardUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
       }
-      Navigator.pop(context); // Optional: go back to previous screen
     });
 
-    return Scaffold(
+    return const Scaffold(
+      backgroundColor: Color(0xFF0A0A0A),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text("Redirecting to Admin Dashboard..."),
-          ],
-        ),
+        child: CircularProgressIndicator(color: Colors.greenAccent),
       ),
     );
   }
