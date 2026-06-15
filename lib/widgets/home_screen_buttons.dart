@@ -13,7 +13,7 @@ class HomeScreenButtons extends StatelessWidget {
   Future<void> _handleResumeClick(BuildContext context) async {
     // This is the official Google Drive view link format
     const String resumeUrl =
-        "https://drive.google.com/file/d/1HmuNQE84kJaUaCy8EfuNgI2BOs2bb9FP/view?usp=sharing";
+        "https://drive.google.com/file/d/1qo5jHHac8Gt2taJlnDLHu3AGH1dxdpa6/view?usp=sharing";
     final Uri uri = Uri.parse(resumeUrl);
 
     try {
@@ -48,32 +48,21 @@ class HomeScreenButtons extends StatelessWidget {
       runSpacing: runSpacing,
       alignment: WrapAlignment.center,
       children: [
-        _buildButton(
-          context,
-          PortfolioData.portfolioButton,
-          "PORTFOLIO",
-          buttonWidth,
-          buttonHeight,
-          () async {
-  await SoundEffects.playFireball(); // 🔥 ADD THIS
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const PortfolioScrollPage()),
-  );
-}
-        ),
-        _buildButton(
-          context,
-          PortfolioData.resumeButton,
-          "RESUME",
-          buttonWidth,
-          buttonHeight,
-          // 🔥 Directly calling the link handler here
-          () async {
-  await SoundEffects.playFireball(); // 🔥 ADD THIS
-  _handleResumeClick(context);
-}
-        ),
+        _buildButton(context, PortfolioData.portfolioButton, "PORTFOLIO",
+            buttonWidth, buttonHeight, () async {
+          await SoundEffects.playFireball(); // 🔥 ADD THIS
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PortfolioScrollPage()),
+          );
+        }),
+        _buildButton(context, PortfolioData.resumeButton, "RESUME", buttonWidth,
+            buttonHeight,
+            // 🔥 Directly calling the link handler here
+            () async {
+          await SoundEffects.playFireball(); // 🔥 ADD THIS
+          _handleResumeClick(context);
+        }),
       ],
     );
   }
