@@ -13,7 +13,7 @@ class HomeScreenButtons extends StatelessWidget {
   Future<void> _handleResumeClick(BuildContext context) async {
     // This is the official Google Drive view link format
     const String resumeUrl =
-        "https://drive.google.com/file/d/1qo5jHHac8Gt2taJlnDLHu3AGH1dxdpa6/view?usp=sharing";
+        "https://drive.google.com/file/d/1mCL7pnbui3dJTImTqQmN_H7un2tqHPTT/view?usp=sharing";
     final Uri uri = Uri.parse(resumeUrl);
 
     try {
